@@ -1,0 +1,60 @@
+name: "SaveIt"
+description: "A new Flutter project with authentication using Laravel and MySQL."
+
+# Evita que la app se publique accidentalmente en pub.dev
+publish_to: 'none'
+
+# Configuración de versión de la app
+version: 1.0.0+1
+
+# Versión del SDK de Dart requerida
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+# Dependencias de la aplicación
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 🔹 Manejo de peticiones HTTP (Conexión con el backend Laravel)
+  http: ^0.13.6
+
+
+
+  # 🔹 Guardar datos localmente (Almacenar tokens JWT y preferencias de usuario)
+  shared_preferences: ^2.2.2
+
+  # 🔹 Manejo de estados en la app (Opcional, pero recomendado)
+  provider: ^6.0.5
+
+  # 🔹 Almacenamiento seguro para tokens (Opcional, mejora seguridad)
+  flutter_secure_storage: ^8.0.0
+
+  # 🔹 Íconos estilo iOS
+  cupertino_icons: ^1.0.6
+
+# Dependencias solo necesarias para desarrollo y pruebas
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 🔹 Buenas prácticas y estilo de código
+  flutter_lints: ^3.0.0
+
+# Configuración específica para Flutter
+flutter:
+  uses-material-design: true
+
+  # Puedes agregar assets (imágenes, fuentes, etc.) aquí
+  assets:
+   #- assets/images/
+   - assets/images/logo_login.png
+
+
+         # Puedes agregar fuentes personalizadas aquí
+  #fonts:
+   # - family: Roboto
+    #  fonts:
+        #- asset: assets/fonts/Roboto-Regular.ttf
+        #- asset: assets/fonts/Roboto-Bold.ttf
+       #   weight: 700
