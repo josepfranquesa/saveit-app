@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/login_page.dart'; // Importa la pantalla de inicio
+import 'pages/login_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: LoginPage.id,
       routes: {
-        LoginPage.id: (_) => LoginPage(),
+        LoginPage.id: (context) => const LoginPage(),
       },
     );
   }
