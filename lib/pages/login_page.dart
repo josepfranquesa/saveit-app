@@ -20,7 +20,9 @@ class _LoginPageState extends State<LoginPage> {
   String _name = "";
   String _phone = "";
   String _email = "";
+  String _email2 = "";
   String _password = "";
+  String _password2 = "";
 
   @override
   Widget build(BuildContext context) {
@@ -118,15 +120,19 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 30),
+        const SizedBox(height: 15),
         _textFieldName(),
-        const SizedBox(height: 30),
+        const SizedBox(height: 15),
         _textFieldPhone(),
-        const SizedBox(height: 30),
+        const SizedBox(height: 15),
         _textFieldEmail(),
-        const SizedBox(height: 30),
+        const SizedBox(height: 15),
+        _textFieldReapeatEmail(),
+        const SizedBox(height: 15),
         _textFieldPassword(),
-        const SizedBox(height: 50),
+        const SizedBox(height: 15),
+        _textFieldReapeatPassword(),
+        const SizedBox(height: 30),
         _buttonSignUp(),
       ],
     );
@@ -196,11 +202,36 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
   }
+  Widget _textFieldReapeatEmail() {
+    return _TextFieldGeneral(
+      labelText: 'Repite el correo',
+      icon: const Icon(Icons.mark_email_read),
+      keyboardType: TextInputType.emailAddress,
+      onChanged: (value) {
+        setState(() {
+          _email2 = value;
+        });
+      },
+    );
+  }
 
   Widget _textFieldPassword() {
     return _TextFieldGeneral(
       labelText: 'Contraseña',
       icon: const Icon(Icons.lock_outline_rounded),
+      onChanged: (value) {
+        setState(() {
+          _password = value;
+        });
+      },
+      obscureText: true,
+    );
+  }
+
+  Widget _textFieldReapeatPassword() {
+    return _TextFieldGeneral(
+      labelText: 'Repite contraseña',
+      icon: const Icon(Icons.sync_lock),
       onChanged: (value) {
         setState(() {
           _password = value;
@@ -233,7 +264,9 @@ class _LoginPageState extends State<LoginPage> {
       "name": _name,
       "phone": _phone,
       "email": _email,
+      "email_confirmation": _email2,
       "password": _password,
+      "password_confirmation": _password2,
     };
 
     try {
