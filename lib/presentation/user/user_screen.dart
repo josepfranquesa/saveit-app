@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/ui/widgets/text_field_general.dart';
+import '../../utils/ui/theme.dart';
 
 class UserScreen extends StatefulWidget {
   static String id = 'user_screen';
