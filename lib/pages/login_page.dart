@@ -1,6 +1,9 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../presentation/transactions/transaction_register_screen.dart';
+import '../providers/auth_provider.dart';
 
 class LoginPage extends StatefulWidget {
   static String id = 'login_page';
@@ -308,15 +311,26 @@ class _LoginPageState extends State<LoginPage> {
         'Iniciar sesión',
         style: TextStyle(color: Color(0xFF7B046F), fontSize: 20),
       ),
-      onPressed: () {
-        _logInUser();
+      onPressed: () async {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        //await authProvider.login(authProvider.email, authProvider.password);
+
+        if (authProvider.isLoggedIn) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => TransactionRegisterScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Error en el inicio de sesión")),
+          );
+        }
       },
     );
   }
 
-  void _logInUser() {
+  //void _logInUser() {
     // Implementar inicio de sesión aquí
-  }
+  //}
 
 }
 
@@ -361,3 +375,4 @@ class _TextFieldGeneralState extends State<_TextFieldGeneral> {
     );
   }
 }
+*/

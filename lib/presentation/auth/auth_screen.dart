@@ -4,15 +4,18 @@ import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/ui/widgets/text_field_general.dart';
 import '../../utils/ui/theme.dart';
+import '../transactions/transaction_register_screen.dart';
+import 'package:SaveIt/presentation/nav/main_screen.dart';
 
-class UserScreen extends StatefulWidget {
-  static String id = 'user_screen';
+
+class AuthScreen extends StatefulWidget {
+  static String id = 'auth_screen';
 
   @override
-  _UserScreenState createState() => _UserScreenState();
+  _AuthScreenState createState() => _AuthScreenState();
 }
 
-class _UserScreenState extends State<UserScreen> {
+class _AuthScreenState extends State<AuthScreen> {
   Set<String> errorFields = {}; // Solo almacena los nombres de los campos con errores
 
   @override
@@ -161,7 +164,17 @@ class _UserScreenState extends State<UserScreen> {
               }
             });
 
-            String errorMessage = result["errors"]?.values.join("\n") ?? "Error inesperado";
+            String errorMessage;
+
+            if (result["success"]) {
+              errorMessage = result["message"] ?? "Registro exitoso";
+              authProvider.toggleLogin(true);
+            } else {
+              errorMessage = result.containsKey("errors")
+                  ? result["errors"].values.join("\n")
+                  : result["message"] ?? "Error inesperado";
+            }
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(errorMessage)),
             );
@@ -198,7 +211,10 @@ class _UserScreenState extends State<UserScreen> {
             style: TextStyle(color: Color(0xFF7B046F), fontSize: 20),
           ),
           onPressed: () async {
-            Map<String, dynamic> result = await AuthService.loginUser(authProvider.email, authProvider.password);
+            Map<String, dynamic> result = await AuthService.loginUser(
+              email: authProvider.email,
+              password: authProvider.password,
+            );
 
             setState(() {
               errorFields.clear();
@@ -207,13 +223,25 @@ class _UserScreenState extends State<UserScreen> {
               }
             });
 
-            String errorMessage = result["errors"]?.values.join("\n") ?? "Error inesperado";
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorMessage)),
-            );
+            if (result["success"]) {
+              // 🔹 Guardar estado de autenticación en el AuthProvider
+              authProvider.setLoggedIn(true);
+
+              // 🔹 Redirigir a MainScreen y eliminar historial de navegación
+              Navigator.pushReplacementNamed(context, MainScreen.id);
+            } else {
+              String errorMessage = result.containsKey("errors")
+                  ? result["errors"].values.join("\n")
+                  : result["message"] ?? "Error inesperado";
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(errorMessage)),
+              );
+            }
           },
         ),
       ],
     );
   }
+
 }
