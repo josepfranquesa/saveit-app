@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: "SaveIt",
             theme: AppTheme.lightTheme,
-            home: !authProvider.isLoading
+            home: authProvider.isLoading
                 ? SplashScreen() // Muestra pantalla de carga mientras verifica sesión
                 : (authProvider.isLoggedIn ? MainScreen() : AuthScreen()), // Dirige a la pantalla correspondiente
             routes: {

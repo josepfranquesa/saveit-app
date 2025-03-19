@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/ui/widgets/text_field_general.dart';
-import '../../utils/ui/theme.dart';
+import '../../utils/ui/app_colors.dart';
 import '../transactions/transaction_register_screen.dart';
 import 'package:SaveIt/presentation/nav/main_screen.dart';
 
@@ -30,8 +30,8 @@ class _AuthScreenState extends State<AuthScreen> {
               begin: Alignment.centerRight,
               end: Alignment.centerLeft,
               colors: [
-                Color(0xFF7B046F),
-                Color(0xFFFFA0D8),
+                AppColors.principal,
+                AppColors.secondary,
               ],
             ),
           ),
@@ -145,7 +145,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
           child: const Text(
             'Registrarse',
-            style: TextStyle(color: Color(0xFF7B046F), fontSize: 20),
+            style: TextStyle(color: AppColors.principal, fontSize: 20),
           ),
           onPressed: () async {
             Map<String, dynamic> result = await AuthService.registerUser(
@@ -208,7 +208,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
           child: const Text(
             'Iniciar sesión',
-            style: TextStyle(color: Color(0xFF7B046F), fontSize: 20),
+            style: TextStyle(color: AppColors.principal, fontSize: 20),
           ),
           onPressed: () async {
             Map<String, dynamic> result = await AuthService.loginUser(

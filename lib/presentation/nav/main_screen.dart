@@ -39,8 +39,8 @@ class _MainScreenState extends State<MainScreen> {
           bottomBarProvider.changeSelectedTab(index);
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppColors.principal,
+        backgroundColor: AppColors.secondary.withOpacity(0.6),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Gráfico"),
           BottomNavigationBarItem(icon: Icon(Icons.savings), label: "Ahorros"),

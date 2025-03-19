@@ -18,7 +18,10 @@ class AuthService {
     try {
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json", "Accept": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: jsonEncode({
           "name": name,
           "phone": phone,
@@ -60,7 +63,10 @@ class AuthService {
     try {
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json", "Accept": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: jsonEncode({
           "email": email,
           "password": password,
@@ -70,10 +76,16 @@ class AuthService {
       final responseBody = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        await _storage.write(key: "remember_token", value: responseBody["token"]);
-        await _storage.write(key: "user", value: jsonEncode(responseBody["user"]));
+        await _storage.write(
+            key: "remember_token", value: responseBody["token"]);
+        await _storage.write(
+            key: "user", value: jsonEncode(responseBody["user"]));
 
-        return {"success": true, "user": responseBody["user"], "message": responseBody["message"]};
+        return {
+          "success": true,
+          "user": responseBody["user"],
+          "message": responseBody["message"]
+        };
       } else if (response.statusCode == 422) {
         return {
           "success": false,
@@ -81,7 +93,10 @@ class AuthService {
           "error_fields": responseBody["error_fields"],
         };
       } else {
-        return {"success": false, "message": responseBody["message"] ?? "Error en el servidor"};
+        return {
+          "success": false,
+          "message": responseBody["message"] ?? "Error en el servidor"
+        };
       }
     } catch (e) {
       return {"success": false, "message": "Error de conexión: $e"};
@@ -100,7 +115,10 @@ class AuthService {
 
     final response = await http.post(
       url,
-      headers: {"Content-Type": "application/json", "Accept": "application/json"},
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
       body: jsonEncode({"token": token}),
     );
 
@@ -115,6 +133,33 @@ class AuthService {
   }
 
   static Future<void> logout() async {
+    String? token = await _storage.read(key: "remember_token");
+
+    if (token != null) {
+      final url = Uri.parse('$baseUrl/logout');
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer $token"
+          },
+          body: jsonEncode({"token": token}), // Enviar el token en el body
+        );
+
+        if (response.statusCode == 200) {
+          print("Sesión cerrada correctamente");
+        } else {
+          print("Error al cerrar sesión: ${response.body}");
+        }
+      } catch (e) {
+        print("Error al cerrar sesión en el backend: $e");
+      }
+    }
+
+    // 🗑️ Borrar datos locales después del logout
     await _storage.delete(key: "remember_token");
     await _storage.delete(key: "user");
   }
