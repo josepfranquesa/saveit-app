@@ -1,62 +1,82 @@
+// ignore_for_file: constant_identifier_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../services/auth_service.dart';
+import '../domain/login_response.dart';
+import '../domain/token.dart';
+import '../services/api.provider.dart';
+import 'package:SaveIt/domain/user.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static const _TOKEN_KEY = "savitl_token";
+  static const _USER_KEY = "saveitl_user";
 
-  bool _isLoggedIn = false;
-  bool _isLoading = true;
-  Map<String, dynamic>? _user;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
 
-  // Getters para la UI
-  bool get isLoggedIn => _isLoggedIn;
+  bool _isLoading = false;
   bool get isLoading => _isLoading;
-  Map<String, dynamic>? get user => _user;
 
-  // Estado de la UI para el login/registro
-  bool selectLogin = true;
-  String name = "";
-  String phone = "";
-  String email = "";
-  String email2 = "";
-  String password = "";
-  String password2 = "";
+  late ApiProvider _api;
 
-  /// **Alternar entre Login y Registro**
+  User? _user;
+  User? get user => _user;
+
+  bool initialized = false;
+
+  // Estado de UI para alternar entre Login y Registro
+  bool _selectLogin = true;
+  bool get selectLogin => _selectLogin;
+
+  String _name = "";
+  String _phone = "";
+  String _email = "";
+  String _email2 = "";
+  String _password = "";
+  String _password2 = "";
+
+  String get name => _name;
+  String get phone => _phone;
+  String get email => _email;
+  String get email2 => _email2;
+  String get password => _password;
+  String get password2 => _password2;
+
   void toggleLogin(bool value) {
-    selectLogin = value;
+    _selectLogin = value;
     notifyListeners();
   }
 
-  // Métodos para actualizar los datos en la UI
   void setName(String value) {
-    name = value;
+    _name = value;
     notifyListeners();
   }
 
   void setPhone(String value) {
-    phone = value;
+    _phone = value;
     notifyListeners();
   }
 
   void setEmail(String value) {
-    email = value;
+    _email = value;
     notifyListeners();
   }
 
   void setEmail2(String value) {
-    email2 = value;
+    _email2 = value;
     notifyListeners();
   }
 
   void setPassword(String value) {
-    password = value;
+    _password = value;
     notifyListeners();
   }
 
   void setPassword2(String value) {
-    password2 = value;
+    _password2 = value;
     notifyListeners();
   }
 
@@ -65,88 +85,136 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 🔹 Método para actualizar ApiProvider dinámicamente
+  void updateApi(ApiProvider api) {
+    _api = api;
+    notifyListeners();
+  }
 
-  /// **Verifica si el usuario ya tiene una sesión activa al iniciar la app**
+  // Constructor
+  AuthProvider({required ApiProvider api}) {
+    _api = api;
+    getUserFromStorage();
+  }
+
+  bool _isLoggedIn = false;
+  bool get isLoggedIn => _isLoggedIn;
+
   Future<void> checkUserSession() async {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      var response = await AuthService.checkToken();
-      if (response["success"]) {
-        _isLoggedIn = true;
-        _user = response["user"];
-        await _storage.write(key: "user", value: response["user"].toString());
-      } else {
-        _isLoggedIn = false;
-        _user = null;
-        await _storage.delete(key: "user");
+    _isLoggedIn = await isUserLogged();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<bool> isUserLogged() async {
+    return await _initTokenListener();
+  }
+
+  Future<bool> _initTokenListener() async {
+    var token = await getTokenFromStorage();
+    if (token != null) {
+      try {
+        _api.setToken(token);
+        await refreshToken();
+        return true;
+      } catch (e) {
+        return false;
       }
-    } catch (e) {
-      _isLoggedIn = false;
-      _user = null;
     }
-
-    _isLoading = false;
-    notifyListeners();
+    return false;
   }
 
-  /// **Inicia sesión con email y contraseña**
-  Future<Map<String, dynamic>> login() async {
-    _isLoading = true;
-    notifyListeners();
-
-    var response = await AuthService.loginUser(
-      email: email,
-      password: password,
-    );
-
-    if (response["success"]) {
-      _isLoggedIn = true;
-      _user = response["user"];
-      await _storage.write(key: "user", value: response["user"].toString());
-      await _storage.write(key: "remember_token", value: response["token"]);
-    } else {
-      _isLoggedIn = false;
-      _user = null;
+  Future<User?> getUserFromStorage() async {
+    dynamic user = await _storage.read(key: _USER_KEY);
+    if (user != null) {
+      _user = User.fromJson(user);
+      return _user;
     }
-
-    _isLoading = false;
-    notifyListeners();
-    return response; // Devolver respuesta para manejar errores en la UI
+    return null;
   }
 
-  /// **Registra un nuevo usuario**
-  Future<Map<String, dynamic>> register() async {
-    _isLoading = true;
+  Future<void> setUser(User user) async {
+    await _storage.write(key: _USER_KEY, value: user.toJson());
+    _user = user;
     notifyListeners();
-
-    var response = await AuthService.registerUser(
-      name: name,
-      phone: phone,
-      email: email,
-      email2: email2,
-      password: password,
-      password2: password2,
-    );
-
-    _isLoading = false;
-    notifyListeners();
-    return response; // Devolver respuesta para manejar errores en la UI
   }
 
-  /// **Cierra sesión y borra datos del almacenamiento seguro**
-  Future<void> logout() async {
-    _isLoading = true;
-    notifyListeners();
-
-    await AuthService.logout();
-    await _storage.deleteAll();
-
-    _isLoggedIn = false;
+  Future<void> removeUser() async {
     _user = null;
-    _isLoading = false;
-
+    await _storage.delete(key: _USER_KEY);
     notifyListeners();
+  }
+
+  Future<LoginResponse> refreshToken() async {
+    try {
+      var resp = await _api.refreshToken();
+      await setToken(Token(resp.access_token));
+      await setUser(resp.user);
+      return resp;
+    } catch (e) {
+      await logout();
+      rethrow;
+    }
+  }
+
+  Future<String?> getTokenFromStorage() async {
+    return await _storage.read(key: _TOKEN_KEY);
+  }
+
+  Future<void> setToken(Token token) async {
+    _api.setToken(token.token);
+    await _storage.write(key: _TOKEN_KEY, value: token.token);
+    notifyListeners();
+  }
+
+  Future<void> removeToken() async {
+    await _storage.delete(key: _TOKEN_KEY);
+    notifyListeners();
+  }
+
+  Future<LoginResponse> login(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      var response = await _api.login(email, password);
+      await setToken(Token(response.access_token));
+      await setUser(response.user);
+      setLoggedIn(true);
+      return response;
+    } catch (e) {
+      await logout();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<LoginResponse> register(String name, String email, String password, String phone_number, String phone_prefix) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      var response = await _api.register(name, email, password, phone_number, phone_prefix);
+      await setToken(Token(response.access_token));
+      await setUser(response.user);
+      setLoggedIn(true);
+      return response;
+    } catch (e) {
+      await logout();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> logout() async {
+    await removeToken();
+    await removeUser();
+    setLoggedIn(false);
+    return true;
   }
 }

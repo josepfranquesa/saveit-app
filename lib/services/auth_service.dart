@@ -1,3 +1,4 @@
+/*
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -133,6 +134,8 @@ class AuthService {
   }
 
   static Future<void> logout() async {
+    // api.logout();
+    // route.
     String? token = await _storage.read(key: "remember_token");
 
     if (token != null) {
@@ -164,3 +167,4 @@ class AuthService {
     await _storage.delete(key: "user");
   }
 }
+*/

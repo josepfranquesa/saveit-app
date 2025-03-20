@@ -30,7 +30,7 @@ class _MainScreenState extends State<MainScreen> {
           SavingsScreen(),
           TransactionRegisterScreen(),
           CoinsScreen(),
-          PerfilScreen(),
+          ///PerfilScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

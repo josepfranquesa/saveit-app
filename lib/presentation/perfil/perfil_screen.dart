@@ -1,121 +1,246 @@
+// ignore_for_file: use_build_context_synchronously
+/*
+import 'package:SaveIt/domain/user.dart';
+import 'package:SaveIt/providers/auth_provider.dart';
+import 'package:SaveIt/providers/perfil_provider.dart';
+import 'package:SaveIt/utils/ui/app_colors.dart';
+import 'package:SaveIt/utils/ui/widgets/user_card.dart';
+//import 'package:SaveIt/utils/ui/widgets/beltime_input.dart';
+//import 'package:SaveIt/utils/ui/widgets/beltime_selector.dart';
+//import 'package:SaveIt/utils/ui/widgets/filled_simple_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:SaveIt/providers/auth_provider.dart';
+
+import '../auth/auth_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
-  static String id = 'perfil_screen';
-
-  const PerfilScreen({Key? key}) : super(key: key);
+  const PerfilScreen({super.key});
 
   @override
-  _PerfilScreenState createState() => _PerfilScreenState();
+  State<PerfilScreen> createState() => _UserScreenState();
 }
 
-class _PerfilScreenState extends State<PerfilScreen> {
-  // Lista de cuentas ficticias
-  List<Map<String, String>> accounts = [
-    {"service": "Cuenta 1", "account": "personal"},
-    {"service": "Cuenta 2", "account": "pareja"},
-    {"service": "Cuenta 3", "account": "familia"},
-  ];
+class _UserScreenState extends State<PerfilScreen> {
+  late User _user;
+  late PerfilProvider _perfilProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    // Datos de usuario ficticios
-    final String userName = authProvider.user?["name"] ?? "Nombre Usuario";
-    final String userEmail = authProvider.user?["email"] ?? "usuario@example.com";
-    final String userPhone = authProvider.user?["phone"] ?? "+123 456 789";
-
-    return Scaffold(
-      appBar: AppBar(title: const Text("Perfil")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // 📸 Foto de perfil
-            const CircleAvatar(
-              radius: 50,
-              backgroundImage: NetworkImage("https://via.placeholder.com/150"),
-            ),
-            const SizedBox(height: 16),
-
-            // 📝 Información del usuario
-            Text(userName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(userEmail, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text(userPhone, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 20),
-
-            // 💾 Listado de cuentas de servicios
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Cuentas Registradas", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: accounts.length,
-                itemBuilder: (context, index) {
-                  final account = accounts[index];
-                  return Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.account_circle),
-                      title: Text(account["service"] ?? ""),
-                      subtitle: Text(account["account"] ?? ""),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          setState(() {
-                            accounts.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Cuenta eliminada")),
-                          );
-                        },
-                      ),
+    return WillPopScope(
+      onWillPop: () async {
+        return false;
+      },
+      child: SafeArea(
+        child: Consumer<AuthProvider>(
+          builder: (context, authProvider, _) {
+            _perfilProvider = Provider.of<PerfilProvider>(context, listen: false);
+            if(authProvider.user!=null) _user = Provider.of<PerfilProvider>(context, listen: false).initForm(authProvider.user!);
+            return Container(
+              color: AppColors.appBackground,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              height: MediaQuery.of(context).size.height,
+              // height: MediaQuery.of(context).size.height - 130,
+              child: SingleChildScrollView(
+                // only scroll when is necessary
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Mi perfil",
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  );
-                },
+                    const SizedBox(height: 30,),
+                    _buildUserInfo(context, _perfilProvider),
+                    const SizedBox(height: 130,),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // 🔘 Botones de Cerrar Sesión y Eliminar Cuenta en una Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // 🔴 Botón de Eliminar Cuenta (Rojo con texto blanco)
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: () {
-                    // Implementar lógica para eliminar cuenta
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Función de eliminar cuenta en desarrollo")),
-                    );
-                  },
-                  child: const Text("Eliminar Cuenta", style: TextStyle(color: Colors.white)),
-                ),
-
-                // ⚪ Botón de Cerrar Sesión (Blanco con texto rojo)
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red, // Texto rojo
-                    side: const BorderSide(color: Colors.red), // Borde rojo
-                  ),
-                  onPressed: () {
-                    authProvider.logout();
-                    Navigator.pushReplacementNamed(context, 'auth_screen');
-                  },
-                  child: const Text("Cerrar Sesión"),
-                ),
-              ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
+
+  Widget _buildUserCard(BuildContext context, PerfilProvider _userFormProvider) {
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        Column(
+          children: [
+            const SizedBox(height: 50,),
+            Expanded(
+              child: (
+                width: double.infinity,
+                height: double.infinity,
+                child: _buildUserInfo(context, _userFormProvider),
+              ),
+            ),
+          ],
+        ),
+        CircleAvatar(
+          radius: 48,
+          backgroundColor: Colors.white,
+          child: CircleAvatar(
+            radius: 45,
+            backgroundImage: NetworkImage(Icons.account_circle as String),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserInfo(BuildContext context, PerfilProvider _userFormProvider) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BeltimeCard(
+            width: double.infinity,
+            color: AppColors.primary,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 45,
+                  backgroundImage: NetworkImage(_user.profile_pic_url ?? ''),
+                ),
+                const SizedBox(width: 20,),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _user.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.normal, color: Colors.white),
+                    ),
+                    Text(
+                      "${_user.surnames}",
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+          const SizedBox(height: 60),
+          Text("NOMBRE COMPLETO", style: Theme.of(context).textTheme.labelMedium,),
+          Text(
+            '${_user.name} ${_user.surnames ?? ''}',
+            style: Theme.of(context).textTheme.bodyMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 30,),
+          Text("DIRECCIÓN DE CORREO ELECTRÓNICO", style: Theme.of(context).textTheme.labelMedium,),
+          Text(
+            _user.email,
+            style: Theme.of(context).textTheme.bodyMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 30),
+          Row(
+            children: [
+              SizedBox(
+                  child: BeltimeSelector(
+                    value: _user.phone_prefix ?? '+34',
+                    items: prefixes.map((e) => DropdownMenuItem(
+                      value: e['code'],
+                      child: Text('${e['code']!} ${e['flag']!}'),
+                    )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _user.phone_prefix = value;
+                      });
+                    },
+                  )
+              ),
+              const SizedBox(width: 10,),
+              Expanded(
+                child: BeltimeInput(
+                    placeholder: "Teléfono",
+                    textInputType: TextInputType.phone,
+                    onChanged: (value) => _user.phone_number = value,
+                    initialValue: _user.phone_number
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          Row(
+            children: [
+              Checkbox(
+                value: _user.allow_notifications ?? false,
+                activeColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                onChanged: (value) {
+                  setState(() {
+                    _user.allow_notifications = value;
+                  });
+                },
+              ),
+              Expanded(
+                child: Text(
+                  "Acepto recibir notificaciones de la aplicación",
+                  style: Theme.of(context).textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          // Button save
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            child: FilledSimpleButton(
+                text: _userFormProvider.isLoading ? 'Guardando...' : 'Guardar',
+                onPressedFunction: _userFormProvider.isLoading
+                    ? (ctx) {
+
+                }
+                    : (ctx) async {
+                  FocusScope.of(context).unfocus();
+                  var resp = await _userFormProvider.updateUser(_user);
+                  if(resp!.isNotEmpty){
+                    toast(context, title: resp[0], type: resp[1]);
+                    Provider.of<AuthProvider>(context, listen: false).refreshToken();
+                  } else {
+                    toast(context, title: 'Datos actualizados', type: 'success');
+                  }
+                }
+            ),
+          ),
+          const SizedBox(height: 30),
+          Center(
+            child: GestureDetector(
+              onTap: () async {
+                await _userFormProvider.logout();
+                WidgetsBinding.instance.addPostFrameCallback((_){
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const AuthScreen(),
+                    ),
+                  );
+                });
+              },
+              child: const Text(
+                'Cerrar sesión',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+*/
