@@ -1,11 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:SaveIt/presentation/nav/main_screen.dart';
 import 'package:SaveIt/presentation/transactions/transaction_register_screen.dart';
+import 'package:SaveIt/presentation/auth/login_screen.dart';
 import 'package:SaveIt/providers/register_form_provider.dart';
 import 'package:SaveIt/utils/helpers/utils_functions.dart';
 import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:SaveIt/utils/ui/widgets/saveit_input.dart';
-import 'package:SaveIt/utils/ui/widgets/saveit_selector.dart';
 import 'package:SaveIt/utils/ui/widgets/filled_simple_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -143,7 +144,7 @@ class RegisterScreen extends StatelessWidget {
                                   AppUtils.toast(context, title: 'Bienvenid@', type: 'success');
                                   Navigator.of(context).pushReplacement(
                                     MaterialPageRoute(
-                                      builder: (context) => TransactionRegisterScreen(),
+                                      builder: (context) => const LoginScreen(),
                                     ),
                                   );
                                 }

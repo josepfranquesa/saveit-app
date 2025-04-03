@@ -27,12 +27,12 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: IndexedStack(
         index: bottomBarProvider.selectedTab,
-        children: [
+        children: const [
           GraphScreen(),
           SavingsScreen(),
           TransactionRegisterScreen(),
           CoinsScreen(),
-          const PerfilScreen(),
+          PerfilScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

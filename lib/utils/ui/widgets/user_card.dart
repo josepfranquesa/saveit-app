@@ -1,8 +1,6 @@
-import 'package:SaveIt/utils/helpers/utils_functions.dart';
 import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:SaveIt/utils/ui/widgets/custom_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class UserCard extends StatelessWidget {
   const UserCard({

@@ -1,7 +1,5 @@
 // ignore_for_file: unnecessary_null_comparison, unused_element
 
-import 'dart:convert';
-import 'dart:io';
 
 
 import 'package:SaveIt/domain/login_response.dart';
@@ -85,7 +83,7 @@ class ApiProvider extends ChangeNotifier {
   }
 
   Future<LoginResponse> register(String name, String phone, String email, String password) async {
-    var resp = await dio.post("/register", data: {"name": name, "phone": phone, "email": email, "password": password}); 
+    var resp = await dio.post("/users", data: {"name": name, "phone": phone, "email": email, "password": password}); 
     return LoginResponse.fromMap(resp.data);
   }
 

@@ -5,12 +5,12 @@ import 'main.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  var configuredApp = AppConfig(
+  var configuredApp = const AppConfig(
     appName: 'SaveIt',
     flavorName: 'preproduction',
     apiBaseUrl: 'https://test.api.saveit.es',
     debugShowCheckedModeBanner: true,
-    child: new SaveItApp(),
+    child: SaveItApp(),
   );
 
   runApp(configuredApp);

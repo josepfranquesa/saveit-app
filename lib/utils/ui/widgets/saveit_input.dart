@@ -1,7 +1,5 @@
 import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
 
 class SaveitInput extends StatelessWidget {
   const SaveitInput(

@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:SaveIt/services/api.provider.dart';
@@ -10,11 +9,11 @@ import 'package:provider/provider.dart';
 class RegisterFormProvider extends ChangeNotifier {
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  String name = 'test';
-  String email = 'test@gmail.com';
-  String phone = '666777666';
-  String password = '12345';
-  String repeat_password = '12345';
+  String name = '';
+  String email = '';
+  String phone = '';
+  String password = '';
+  String repeat_password = '';
 
   bool show_password = false;
 
@@ -72,18 +71,6 @@ class RegisterFormProvider extends ChangeNotifier {
   set showPassword(bool value) {
     show_password = value;
     notifyListeners();
-  }
-
-  initForm() {
-    name = 'test';
-    email = 'test@gmail.com';
-    phone = '666777666';
-    password = '12345';
-    repeat_password = '12345';
-    show_password = false;
-    Future.delayed(const Duration(seconds: 1), () {
-      notifyListeners();
-    });
   }
 
   bool isValidForm() {
