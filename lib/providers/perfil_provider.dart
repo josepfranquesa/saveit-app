@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 
 class PerfilProvider with ChangeNotifier {
+  GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   User? _user;
   User? get user => _user;
@@ -31,9 +32,13 @@ class PerfilProvider with ChangeNotifier {
   }
 
   User initForm(User u) {
-    _user = u;
-    // notifyListeners();
-    return u;
+    return _user =
+        User(
+          id: 1,
+          name: 'Test user fake',
+          email: 'test@email.com',
+          phone: '123456789',
+        );
   }
 
   Future<List<String>?> updateUser(User user) async {
@@ -45,7 +50,7 @@ class PerfilProvider with ChangeNotifier {
         isLoading = false;
         notifyListeners();
         return [];
-      } on DioError {
+      } on DioException {
         isLoading = false;
         notifyListeners();
         return ['Algo salió mal','error'];
@@ -55,6 +60,7 @@ class PerfilProvider with ChangeNotifier {
         return ['Algo salió mal','error'];
       }
     }
+    return null;
   }
 
   Future<bool> logout() async {

@@ -2,13 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:meta/meta.dart';
 
 class AppConfig extends InheritedWidget {
-  AppConfig(
-      {required this.appName,
+  const AppConfig(
+      {super.key, required this.appName,
         required this.flavorName,
         required this.apiBaseUrl,
         required this.debugShowCheckedModeBanner,
-        required Widget child})
-      : super(child: child);
+        required super.child});
 
   final String appName;
   final String flavorName;

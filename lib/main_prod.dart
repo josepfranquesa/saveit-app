@@ -8,9 +8,9 @@ void main() async {
   var configuredApp = AppConfig(
     appName: 'SaveIt',
     flavorName: 'production',
-    apiBaseUrl: 'https://api.saveit.es/api/v1',
-    child: new SaveIt(),
+    apiBaseUrl: 'https://api.saveit.es',
     debugShowCheckedModeBanner: false,
+    child: new SaveItApp(),
   );
 
   runApp(configuredApp);

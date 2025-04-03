@@ -1,5 +1,4 @@
-import 'package:SaveIt/services/api.provider.dart';
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/login_response.dart';
 import '../../providers/auth_provider.dart';
@@ -155,11 +154,24 @@ class _AuthScreenState extends State<AuthScreen> {
           hasError: errorFields.contains("email"),
         ),
         TextFieldGeneral(
+          labelText: 'Repite el correo',
+          icon: const Icon(Icons.mark_email_read),
+          onChanged: authProvider.setEmail2,
+          hasError: errorFields.contains("email2"),
+        ),
+        TextFieldGeneral(
           labelText: 'Contraseña',
           icon: const Icon(Icons.lock_outline_rounded),
           obscureText: true,
           onChanged: authProvider.setPassword,
           hasError: errorFields.contains("password"),
+        ),
+        TextFieldGeneral(
+          labelText: 'Repite la contraseña',
+          icon: const Icon(Icons.sync_lock),
+          obscureText: true,
+          onChanged: authProvider.setPassword2,
+          hasError: errorFields.contains("password2"),
         ),
         const SizedBox(height: 30),
         ElevatedButton(
@@ -181,17 +193,24 @@ class _AuthScreenState extends State<AuthScreen> {
   void _handleLogin(AuthProvider authProvider) async {
     try {
       await authProvider.login(authProvider.email, authProvider.password);
+
+      // Verifica si el widget aún está montado antes de usar context
+      if (!mounted) return;
+
       Navigator.pushReplacementNamed(context, MainScreen.id);
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error en el inicio de sesión: \$e")),
+        SnackBar(content: Text("Error en el inicio de sesión: $e")),
       );
     }
   }
 
+
   void _handleRegister(AuthProvider authProvider) async {
     try {
-      await authProvider.register(authProvider.name, authProvider.email, authProvider.password, authProvider.phone, "");
+      await authProvider.register(authProvider.name, authProvider.phone, authProvider.email, authProvider.email2, authProvider.password, authProvider.password2);
       Navigator.pushReplacementNamed(context, MainScreen.id);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -199,4 +218,4 @@ class _AuthScreenState extends State<AuthScreen> {
       );
     }
   }
-}
+}*/

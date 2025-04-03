@@ -1,87 +1,56 @@
-import 'dart:io';
 import 'package:SaveIt/app_config.dart';
-import 'package:SaveIt/presentation/auth/auth_screen.dart';
+import 'package:SaveIt/presentation/auth/login_screen.dart';
+import 'package:SaveIt/presentation/auth/register_screen.dart';
+import 'package:SaveIt/presentation/load/splash_screen.dart';
 import 'package:SaveIt/presentation/nav/main_screen.dart';
-import 'package:SaveIt/providers/bottom_bar_provider.dart';
+import 'package:SaveIt/presentation/transactions/transaction_register_screen.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
+import 'package:SaveIt/providers/bottom_bar_provider.dart';
+import 'package:SaveIt/providers/login_form_provider.dart';
+import 'package:SaveIt/providers/perfil_provider.dart';
+import 'package:SaveIt/providers/register_form_provider.dart';
+import 'package:SaveIt/providers/transaction_register_provider.dart';
+//import 'package:SaveIt/providers/settings_provider.dart';
+//import 'package:SaveIt/providers/user_form_provider.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:SaveIt/utils/ui/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:SaveIt/presentation/load/splash_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  /// 🔹 Configuración de `AppConfig`
-  var configuredApp = AppConfig(
-    appName: 'SaveIt',
-    flavorName: 'development',
-    apiBaseUrl: Platform.isAndroid ? "http://10.0.2.2:8000/api/v1" : "http://localhost:8000/api/v1",
-    debugShowCheckedModeBanner: true,
-    child: const SaveIt(),
-  );
-
-  runApp(configuredApp);
+  runApp(const SaveItApp());
 }
 
-class SaveIt extends StatelessWidget {
-  const SaveIt({super.key});
+class SaveItApp extends StatelessWidget {
+  const SaveItApp({super.key});
 
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    /// 🔹 Acceder a la configuración desde `AppConfig`
-    final config = AppConfig.of(context);
-
-    /// 🛑 Si `config` es null, mostrar un error amigable
-    if (config == null) {
-      return const MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Text(
-              "⚠️ Error: Configuración no encontrada",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
-            ),
-          ),
-        ),
-      );
-    }
+    var config = AppConfig.of(context);
 
     return MultiProvider(
       providers: [
-        /// 🔹 Se cambia `Provider` por `ChangeNotifierProvider`
-        ChangeNotifierProvider<ApiProvider>(
-          create: (_) => ApiProvider(url: config.apiBaseUrl),
-        ),
-
-        /// 🔹 Proxy Provider para `AuthProvider`, asegurando que se pase `ApiProvider` correctamente
-        ChangeNotifierProxyProvider<ApiProvider, AuthProvider>(
-          create: (context) {
-            final api = Provider.of<ApiProvider>(context, listen: false);
-            final authProvider = AuthProvider(api: api);
-            authProvider.checkUserSession();
-            return authProvider;
-          },
-          update: (_, api, authProvider) {
-            authProvider!..updateApi(api);
-            return authProvider;
-          },
-        ),
-
-        /// 🔹 Proveedor del `BottomBarProvider`
-        ChangeNotifierProvider(create: (_) => BottomBarProvider()),
+        ListenableProvider<ApiProvider>(create: (_) => ApiProvider(url: config!.apiBaseUrl)),
+        ListenableProxyProvider<ApiProvider, AuthProvider>(update: (_, api, __) => AuthProvider(api: api),),
+        ChangeNotifierProvider(create: (context) => BottomBarProvider()),
+        //ListenableProxyProvider<ApiProvider, SettingsProvider>(update: (_, api, __) => SettingsProvider(api: api),),
+        ListenableProxyProvider<ApiProvider, LoginFormProvider>(update: (_, api, __) => LoginFormProvider(api: api),),
+        ListenableProxyProvider<ApiProvider, RegisterFormProvider>(update: (_, api, __) => RegisterFormProvider(api: api),),
+        ListenableProxyProvider<ApiProvider, TransactionRegisterProvider>(update: (_, api, __) => TransactionRegisterProvider(api: api),),
+        ListenableProxyProvider2<ApiProvider, AuthProvider, PerfilProvider>(update: (_, api, auth, __) => PerfilProvider(api: api, auth: auth),),
+        //ListenableProxyProvider<ApiProvider, InsuranceProvider>(update: (_, api, __) => InsuranceProvider(api: api),),
+        //ListenableProxyProvider<ApiProvider, InsuranceBranchProvider>(update: (_, api, __) => InsuranceBranchProvider(api: api),),
+        //ListenableProxyProvider<ApiProvider, AdviserProvider>(update: (_, api, __) => AdviserProvider(api: api),),
+        //ListenableProxyProvider<ApiProvider, InsuranceDetailProvider>(update: (_, api, __) => InsuranceDetailProvider(api: api),),
+        //ListenableProxyProvider<ApiProvider, BenefitsProvider>(update: (_, api, __) => BenefitsProvider(api: api),),
+        //ListenableProxyProvider<ApiProvider, BenefitDetailProvider>(update: (_, api, __) => BenefitDetailProvider(api: api),),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          return MaterialApp(
-            title: config.appName,
-            debugShowCheckedModeBanner: config.debugShowCheckedModeBanner,
-            theme: AppTheme.lightTheme,
-            home: authProvider.isLoading
-                ? SplashScreen()
-                : (authProvider.isLoggedIn ? MainScreen() : AuthScreen()),
-          );
-        },
+      child: MaterialApp(
+        title: config!.appName,
+        debugShowCheckedModeBanner: config.debugShowCheckedModeBanner,
+        theme: SaveItTheme.light,
+        home:  const LoginScreen(),
       ),
     );
   }

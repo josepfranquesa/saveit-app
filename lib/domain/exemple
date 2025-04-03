@@ -1,0 +1,7 @@
+domain/
+
+Aquí se define la lógica de negocio, modelos, entidades y repositorios.
+
+Ejemplos:
+models/ → Clases de datos (User.dart, Product.dart)
+repositories/ → Interfaces de acceso a datos (UserRepository.dart)

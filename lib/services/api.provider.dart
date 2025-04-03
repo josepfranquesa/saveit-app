@@ -1,14 +1,13 @@
+// ignore_for_file: unnecessary_null_comparison, unused_element
 
 import 'dart:convert';
 import 'dart:io';
+
 
 import 'package:SaveIt/domain/login_response.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-
-import '../domain/login_response.dart';
-import '../domain/user.dart';
 
 class ApiProvider extends ChangeNotifier {
   String _token = "";
@@ -30,8 +29,7 @@ class ApiProvider extends ChangeNotifier {
   factory ApiProvider({required String url}) {
     if (!_instancia.initialized) {
       _instancia = ApiProvider._internal();
-      _instancia.dio = Dio(options)
-        ..interceptors.add(_instancia._tokenInterceptor());
+      _instancia.dio = Dio(options);
 
       if (url != null) {
         _instancia.dio.options.baseUrl = url;
@@ -62,7 +60,6 @@ class ApiProvider extends ChangeNotifier {
     return uri.toString().contains("api");
   }
 
-
   _tokenInterceptor() {
     return InterceptorsWrapper(onRequest: (options, handler) async {
       if (_esUrlTractableToken(options.uri) && (_token != "")) {
@@ -78,17 +75,17 @@ class ApiProvider extends ChangeNotifier {
    * AUTHENTICATION
    */
   Future<LoginResponse> login(String email, String password) async {
-    var resp = await dio.post("/auth/login", data: {"email": email, "password": password, "is_app": true});
+    var resp = await dio.post("/login", data: {"email": email, "password": password});
     return LoginResponse.fromJson(resp.data);
   }
 
   Future<LoginResponse> refreshToken() async {
-    var resp = await dio.post("/auth/refresh", data: {"is_app": true});
+    var resp = await dio.post("/refresh", data: {"is_app": true});
     return LoginResponse.fromJson(resp.data);
   }
 
-  Future<LoginResponse> register(String name, String email, String password, String phone_number, String phone_prefix) async {
-    var resp = await dio.post("/auth/register", data: {"name": name, "email": email, "password": password, "role": "customer", "phone_number": phone_number, "phone_prefix": phone_prefix, "allow_notifications": true, "is_app": true});
+  Future<LoginResponse> register(String name, String phone, String email, String password) async {
+    var resp = await dio.post("/register", data: {"name": name, "phone": phone, "email": email, "password": password}); 
     return LoginResponse.fromMap(resp.data);
   }
 
@@ -103,16 +100,47 @@ class ApiProvider extends ChangeNotifier {
   /*
    * USER
    */
-  Future<User?> getUser(int user_id) async {
-    var resp = await dio.get("/users/$user_id");
+  Future<User?> getUser(int userId) async {
+    var resp = await dio.get("/users/$userId");
     return User.fromMap(resp.data);
   }
+
 
   Future<User?> updateUser(User user) async {
     var resp = await dio.put("/users/${user.id}", data: user.toJson());
     return User.fromMap(resp.data);
   }
 
+  /*
+   * TRANSACTIONS
+   */
+  Future<Response<dynamic>> getAccountsByUserId(int userId) async {
+    return await dio.get("/user_accounts/$userId");
+  }
+
+  Future<Response<dynamic>> get_transactions(int accountId) async {
+    return await dio.get("/transactions/$accountId");
+  }
+
+  /*Future<Response<dynamic>> create_account(Map<String, dynamic> data) async {
+    return await dio.post("/accounts", data: data);
+  }
+
+  Future<Response<dynamic>> create_transaction(Map<String, dynamic> data) async {
+    return await dio.post("/transactions", data: data);
+  }
+
+  Future<Response<dynamic>> delete_account(int accountId) async {
+    return await dio.delete("/accounts/$accountId");
+  }
+
+  Future<Response<dynamic>> delete_transaction(int transactionId) async {
+    return await dio.delete("/transactions/$transactionId");
+  }
+
+  Future<Response<dynamic>> update_transaction(int transactionId, Map<String, dynamic> data) async {
+    return await dio.put("/transactions/$transactionId", data: data);
+  }*/
 
 
 

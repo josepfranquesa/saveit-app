@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 class GraphScreen extends StatefulWidget {
   static String id = 'graph_screen';
 
+  const GraphScreen({super.key});
+
   @override
   _GraphScreenState createState() => _GraphScreenState();
 }
@@ -12,9 +14,9 @@ class _GraphScreenState extends State<GraphScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Gráficos'),
+        title: const Text('Gráficos'),
       ),
-      body: Center(
+      body: const Center(
         child: Text(
           'Página de gráficos',
           style: TextStyle(fontSize: 24),

@@ -1,0 +1,5 @@
+Archivos de gestión del estado con Provider, Riverpod o cualquier otro patrón de gestión de estado.
+
+Ejemplos:
+auth_provider.dart → Gestión de autenticación
+cart_provider.dart → Gestión del carrito de compras

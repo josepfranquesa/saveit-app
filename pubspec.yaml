@@ -18,8 +18,8 @@ dependencies:
 
   # 🔹 Manejo de peticiones HTTP (Conexión con el backend Laravel)
   http: ^0.13.6
-
-
+  dio: ^5.4.0
+  cherry_toast: ^1.1.0
 
   # 🔹 Guardar datos localmente (Almacenar tokens JWT y preferencias de usuario)
   shared_preferences: ^2.2.2

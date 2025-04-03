@@ -1,0 +1,6 @@
+Funciones auxiliares, constantes, validaciones, etc.
+
+Ejemplos:
+constants.dart → Constantes globales
+validators.dart → Funciones de validación de formularios
+helpers.dart → Funciones generales reutilizables

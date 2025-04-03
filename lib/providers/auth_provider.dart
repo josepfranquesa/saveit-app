@@ -1,15 +1,18 @@
 // ignore_for_file: constant_identifier_names
 
+import 'package:SaveIt/domain/login_response.dart';
+import 'package:SaveIt/domain/token.dart';
+import 'package:SaveIt/domain/user.dart';
+import 'package:SaveIt/services/api.provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../domain/login_response.dart';
-import '../domain/token.dart';
-import '../services/api.provider.dart';
-import 'package:SaveIt/domain/user.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const _TOKEN_KEY = "savitl_token";
-  static const _USER_KEY = "saveitl_user";
+  static const _TOKEN_KEY = "beltimel_token";
+  static const _TOKEN_PROTECTED = "beltimel_token_protected";
+  static const _USER_KEY = "beltimel_user";
+  static const _USER_PROTECTED = "beltimel_user_protected";
+
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(
@@ -22,109 +25,49 @@ class AuthProvider extends ChangeNotifier {
 
   late ApiProvider _api;
 
+  set isLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
   User? _user;
   User? get user => _user;
 
   bool initialized = false;
 
-  // Estado de UI para alternar entre Login y Registro
-  bool _selectLogin = true;
-  bool get selectLogin => _selectLogin;
+  //Constructor + SINGLETON
+  static AuthProvider _instancia = AuthProvider._internal();
+  AuthProvider._internal();
+  factory AuthProvider({required ApiProvider api}) {
+    if(!_instancia.initialized) {
+      _instancia = AuthProvider._internal();
+      _instancia._api = api;
+      _instancia.getUserFromStorage();
 
-  String _name = "";
-  String _phone = "";
-  String _email = "";
-  String _email2 = "";
-  String _password = "";
-  String _password2 = "";
+      //init streams
+      _instancia.initialized = true;
+    }
 
-  String get name => _name;
-  String get phone => _phone;
-  String get email => _email;
-  String get email2 => _email2;
-  String get password => _password;
-  String get password2 => _password2;
-
-  void toggleLogin(bool value) {
-    _selectLogin = value;
-    notifyListeners();
-  }
-
-  void setName(String value) {
-    _name = value;
-    notifyListeners();
-  }
-
-  void setPhone(String value) {
-    _phone = value;
-    notifyListeners();
-  }
-
-  void setEmail(String value) {
-    _email = value;
-    notifyListeners();
-  }
-
-  void setEmail2(String value) {
-    _email2 = value;
-    notifyListeners();
-  }
-
-  void setPassword(String value) {
-    _password = value;
-    notifyListeners();
-  }
-
-  void setPassword2(String value) {
-    _password2 = value;
-    notifyListeners();
-  }
-
-  void setLoggedIn(bool value) {
-    _isLoggedIn = value;
-    notifyListeners();
-  }
-
-  // 🔹 Método para actualizar ApiProvider dinámicamente
-  void updateApi(ApiProvider api) {
-    _api = api;
-    notifyListeners();
-  }
-
-  // Constructor
-  AuthProvider({required ApiProvider api}) {
-    _api = api;
-    getUserFromStorage();
-  }
-
-  bool _isLoggedIn = false;
-  bool get isLoggedIn => _isLoggedIn;
-
-  Future<void> checkUserSession() async {
-    _isLoading = true;
-    notifyListeners();
-
-    _isLoggedIn = await isUserLogged();
-    _isLoading = false;
-    notifyListeners();
+    return _instancia;
   }
 
   Future<bool> isUserLogged() async {
     return await _initTokenListener();
   }
 
-  Future<bool> _initTokenListener() async {
+  _initTokenListener() async {
     var token = await getTokenFromStorage();
-    if (token != null) {
+    if(token!=null) {
       try {
         _api.setToken(token);
-        await refreshToken();
+        var resp = await refreshToken();
         return true;
-      } catch (e) {
+      } on Exception {
         return false;
       }
+    } else {
+      return false;
     }
-    return false;
   }
 
   Future<User?> getUserFromStorage() async {
@@ -133,88 +76,95 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(user);
       return _user;
     }
-    return null;
+    return user;
   }
 
-  Future<void> setUser(User user) async {
+  setUser(User user) async {
     await _storage.write(key: _USER_KEY, value: user.toJson());
     _user = user;
     notifyListeners();
   }
 
-  Future<void> removeUser() async {
+  removeUser() {
     _user = null;
-    await _storage.delete(key: _USER_KEY);
+    _storage.delete(key: _USER_KEY);
     notifyListeners();
   }
 
   Future<LoginResponse> refreshToken() async {
     try {
       var resp = await _api.refreshToken();
-      await setToken(Token(resp.access_token));
-      await setUser(resp.user);
+      bool setted = await setToken(Token(resp.access_token));
+      setUser(resp.user);
       return resp;
-    } catch (e) {
-      await logout();
+    } on Exception {
+      logout();
       rethrow;
     }
   }
 
   Future<String?> getTokenFromStorage() async {
-    return await _storage.read(key: _TOKEN_KEY);
+    var token = await _storage.read(key: _TOKEN_KEY);
+    return token?.toString();
   }
 
-  Future<void> setToken(Token token) async {
+  setToken(Token token) async {
     _api.setToken(token.token);
     await _storage.write(key: _TOKEN_KEY, value: token.token);
     notifyListeners();
+    return true;
   }
 
-  Future<void> removeToken() async {
-    await _storage.delete(key: _TOKEN_KEY);
+  removeToken() async {
+    await _removeProtection();
+    _storage.delete(key: _TOKEN_KEY);
     notifyListeners();
+  }
+
+  _removeProtection() async {
+    await _storage.delete(key: _TOKEN_PROTECTED);
+    return true;
   }
 
   Future<LoginResponse> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
     try {
-      var response = await _api.login(email, password);
+      LoginResponse response = await _api.login(email, password);
       await setToken(Token(response.access_token));
       await setUser(response.user);
-      setLoggedIn(true);
-      return response;
-    } catch (e) {
-      await logout();
-      rethrow;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return response;
+    } catch (error) {
+      _isLoading = false;
+      notifyListeners();
+      logout();
+      rethrow;
     }
   }
 
-  Future<LoginResponse> register(String name, String email, String password, String phone_number, String phone_prefix) async {
+  Future<LoginResponse> register(String name, String phone, String email, String password) async {
     _isLoading = true;
     notifyListeners();
     try {
-      var response = await _api.register(name, email, password, phone_number, phone_prefix);
+      LoginResponse response = await _api.register(name, phone, email, password);
       await setToken(Token(response.access_token));
       await setUser(response.user);
-      setLoggedIn(true);
-      return response;
-    } catch (e) {
-      await logout();
-      rethrow;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return response;
+    } catch (error) {
+      _isLoading = false;
+      notifyListeners();
+      logout();
+      rethrow;
     }
   }
 
   Future<bool> logout() async {
     await removeToken();
     await removeUser();
-    setLoggedIn(false);
     return true;
   }
 }

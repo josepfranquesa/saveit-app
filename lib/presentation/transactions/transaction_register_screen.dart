@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/ui/app_colors.dart';
+
 class TransactionRegisterScreen extends StatefulWidget {
   static String id = 'transaction_register_screen';
+
+  const TransactionRegisterScreen({super.key});
 
   @override
   _TransactionRegisterScreenState createState() => _TransactionRegisterScreenState();
@@ -87,9 +91,10 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text("Registrar Movimiento")),
       body: Column(
-        children: [
+          children: [
           // Fila de Cuentas Fake
           Padding(
             padding: const EdgeInsets.all(10),

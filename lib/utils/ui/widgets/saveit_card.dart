@@ -4,8 +4,8 @@ import 'package:SaveIt/utils/ui/widgets/custom_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-class UserCard extends StatelessWidget {
-  const UserCard({
+class SaveItCard extends StatelessWidget {
+  const SaveItCard({
     super.key,
     this.width,
     this.child,
@@ -47,8 +47,8 @@ class UserCard extends StatelessWidget {
   }
 }
 
-class BeltimeCardPage extends StatelessWidget {
-  const BeltimeCardPage({
+class SaveItCardPage extends StatelessWidget {
+  const SaveItCardPage({
     super.key,
     this.height,
     this.width,
@@ -108,7 +108,7 @@ class InsuranceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color c = color ?? AppColors.secondary;
+    Color c = color ?? AppUtils.insuranceBranchToColor(type);
     double iconSize = width!=null ? width! * 0.5 : 100;
 
     return Container(
@@ -123,7 +123,7 @@ class InsuranceCard extends StatelessWidget {
           Positioned(
             bottom: 0,
             right: 0,
-            child: insuranceBranchToIcon(type??'', size: iconSize, color: textColor??AppColors.secondary),
+            child: insuranceBranchToIcon(type??'', size: iconSize, color: AppUtils.makeColorBrighter(c, 0.3)),
           ),
           Center(
             child: Text(

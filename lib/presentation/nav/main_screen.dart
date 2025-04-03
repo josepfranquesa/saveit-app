@@ -13,6 +13,8 @@ import 'package:SaveIt/providers/bottom_bar_provider.dart';
 class MainScreen extends StatefulWidget {
   static String id = 'main_screen';
 
+  const MainScreen({super.key});
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
@@ -30,7 +32,7 @@ class _MainScreenState extends State<MainScreen> {
           SavingsScreen(),
           TransactionRegisterScreen(),
           CoinsScreen(),
-          ///PerfilScreen(),
+          const PerfilScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

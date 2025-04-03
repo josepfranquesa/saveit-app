@@ -11,5 +11,10 @@ class AppColors {
   static const Color success = Color(0xFF4CAF50); // Verde
   static const Color warning = Color(0xFFFFC107); // Amarillo
   static const Color danger = Color(0xFFF44336); // Rojo
+  static const Color white = Color(0xFFFFFFFF); // Blanco
+  static const Color backgroundInApp = Color(0x96FFA0D8); // Blanco
+
+
+
 
 }
