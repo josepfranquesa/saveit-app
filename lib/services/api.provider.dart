@@ -105,8 +105,14 @@ class ApiProvider extends ChangeNotifier {
     return await dio.get("/accounts/user/$userId");
   }
 
+  Future<Response<dynamic>> deleteUserAccount(int accountId, int userId) async {
+    // Se asume que el endpoint espera el user_id en el cuerpo de la petición.
+    return await dio.delete("/account/user/$accountId/$userId");
+  }
+
+
 /* **********************************************
-   *                CUENTAS DEL USUARIO
+   *                REGISTROS DEL USUARIO
    *********************************************** */
   Future<Response<dynamic>> get_transactions(int accountId) async {
     return await dio.get("/register/account/$accountId");

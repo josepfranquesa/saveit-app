@@ -62,12 +62,24 @@ class PerfilProvider with ChangeNotifier {
 
   // Función para obtener las cuentas del usuario
   Future<List<dynamic>> fetchAccounts() async {
-    if (_auth.user == null) {
-      return [];
+  final response = await _api.getAccountsByUserId(_auth.user!.id);
+  // La respuesta será un Map con la clave "accounts"
+  return response.data['accounts'] as List<dynamic>;
+}
+
+
+  Future<bool> deleteUserAccount(int accountId, int userId) async {
+    try {
+      final response = await _api.deleteUserAccount(accountId, userId);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Si se elimina correctamente, retornamos true.
+        return true;
+      }
+      return false;
+    } catch (e) {
+      // En caso de error, retornamos false.
+      return false;
     }
-    final response = await _api.getAccountsByUserId(_auth.user!.id);
-    // Se asume que response.data es una lista de cuentas
-    return response.data;
   }
 
   // Función para eliminar la cuenta del usuario (y cerrar sesión)
