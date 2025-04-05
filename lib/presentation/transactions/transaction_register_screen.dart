@@ -15,9 +15,8 @@ class TransactionRegisterScreen extends StatefulWidget {
 }
 
 class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
-  // Variables para la cuenta seleccionada
-  String selectedAccount = "";
-  double selectedBalance = 0.0;
+  // Variable para la cuenta seleccionada (almacena el objeto Account completo)
+  Account? selectedAccount;
 
   // Lista de transacciones fake (puedes reemplazarla cuando implementes la parte real)
   List<Map<String, dynamic>> transactions = List.generate(
@@ -82,16 +81,15 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     );
   }
 
-  void _selectAccount(String accountTitle, double balance) {
+  // Actualiza la cuenta seleccionada
+  void _selectAccount(Account account) {
     setState(() {
-      selectedAccount = accountTitle;
-      selectedBalance = balance;
+      selectedAccount = account;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Se utiliza FutureBuilder para cargar las cuentas reales del usuario
     return Scaffold(
       backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text("Registrar Movimiento")),
@@ -123,9 +121,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                 } else {
                   final accounts = snapshot.data!;
                   // Si aún no se ha seleccionado ninguna cuenta, se selecciona la primera.
-                  if (selectedAccount.isEmpty && accounts.isNotEmpty) {
-                    selectedAccount = accounts[0].title;
-                    selectedBalance = accounts[0].balance;
+                  if (selectedAccount == null && accounts.isNotEmpty) {
+                    selectedAccount = accounts[0];
                   }
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -157,12 +154,9 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               ),
               child: Column(
                 children: [
-                  Text(selectedAccount, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(selectedAccount?.title ?? "", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  Text(
-                    "\$${selectedBalance.toStringAsFixed(2)}",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700),
-                  ),
+                  Text("${selectedAccount?.balance.toStringAsFixed(2) ?? "0.00"}€",style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700),),
                 ],
               ),
             ),
@@ -194,13 +188,13 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
   // Widget para cada cuenta (usando el objeto Account) con ancho fijo
   Widget _accountContainer(Account account) {
     return GestureDetector(
-      onTap: () => _selectAccount(account.title, account.balance),
+      onTap: () => _selectAccount(account),
       child: Container(
         width: 150, // ancho fijo
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: selectedAccount == account.title ? Colors.blue.shade300 : Colors.blue.shade100,
+          color: selectedAccount?.id == account.id ? Colors.blue.shade300 : Colors.blue.shade100,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -245,7 +239,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "\$${(transaction['amount'] ?? 0.0).toStringAsFixed(2)}",
+              "€${(transaction['amount'] ?? 0.0).toStringAsFixed(2)}",
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: transaction['type'] == 'Ingreso' ? Colors.green.shade700 : Colors.red.shade700),
             ),
             PopupMenuButton<String>(
