@@ -17,12 +17,16 @@ class Account {
 
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
-      id: json['id'],
-      title: json['title'],
-      host: json['host'],
-      balance: (json['balance'] as num).toDouble(),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      id: json['id'] ?? 0, // Si no viene 'id', asigna 0
+      title: json['title'] ?? 'Sin título', // Valor por defecto si es null
+      host: json['host'] ?? 0, // Valor por defecto para host
+      balance: (json['balance'] as num?)?.toDouble() ?? 0.0, // Maneja null
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(), // Si falta, toma la fecha actual
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : DateTime.now(),
     );
   }
 }

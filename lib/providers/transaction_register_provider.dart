@@ -1,11 +1,10 @@
-
 import 'package:SaveIt/domain/account.dart';
+import 'package:SaveIt/domain/transaction_register.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../domain/transaction_register.dart';
 import 'auth_provider.dart';
 
 class TransactionRegisterProvider extends ChangeNotifier {
@@ -15,6 +14,7 @@ class TransactionRegisterProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   late ApiProvider _api;
+  late AuthProvider _auth;
   bool initialized = false;
 
   List<Account> _accounts = [];
@@ -25,15 +25,13 @@ class TransactionRegisterProvider extends ChangeNotifier {
   // Constructor + SINGLETON
   static TransactionRegisterProvider _instancia = TransactionRegisterProvider._internal();
   TransactionRegisterProvider._internal();
-  factory TransactionRegisterProvider({required ApiProvider api}) {
+  factory TransactionRegisterProvider({required ApiProvider api, required AuthProvider auth}) {
     if (!_instancia.initialized) {
       _instancia = TransactionRegisterProvider._internal();
       _instancia._api = api;
-
-      // init streams o datos aquí si necesitas
+      _instancia._auth = auth;
       _instancia.initialized = true;
     }
-
     return _instancia;
   }
 
@@ -42,38 +40,41 @@ class TransactionRegisterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getAccountsForUser(BuildContext context) async {
+  Future<List<Account>> getAccountsForUser(BuildContext context) async {
     try {
       isLoading = true;
-
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final userId = auth.user?.id;
-
       final response = await _api.getAccountsByUserId(userId!);
 
-      _accounts = (response.data as List)
-          .map((json) => Account.fromJson(json))
-          .toList();
-
+      final data = response.data;
+      List<dynamic> accountsJson = [];
+      if (data is Map<String, dynamic> && data.containsKey('accounts')) {
+        accountsJson = data['accounts'] as List<dynamic>;
+      } else if (data is List) {
+        accountsJson = data;
+      }
+      
+      _accounts = accountsJson.map((json) => Account.fromJson(json)).toList();
+      
       isLoading = false;
-      notifyListeners();
+      return _accounts;
     } on DioException catch (e) {
       isLoading = false;
-      notifyListeners();
       Clipboard.setData(ClipboardData(text: e.toString()));
       debugPrint('DioError fetching accounts: $e');
+      return [];
     } catch (e) {
       isLoading = false;
-      notifyListeners();
       Clipboard.setData(ClipboardData(text: e.toString()));
       debugPrint('General error fetching accounts: $e');
+      return [];
     }
   }
 
   Future<void> getTransactionsForAccount(int accountId) async {
     try {
       isLoading = true;
-
       final response = await _api.get_transactions(accountId);
 
       _transactions = (response.data as List)
@@ -94,6 +95,4 @@ class TransactionRegisterProvider extends ChangeNotifier {
       debugPrint('Error fetching transactions: $e');
     }
   }
-
-
 }

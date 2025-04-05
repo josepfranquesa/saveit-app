@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import '../../domain/account.dart';
+import '../../providers/transaction_register_provider.dart';
 import '../../utils/ui/app_colors.dart';
+import '../auth/login_screen.dart';
+import '../../utils/helpers/utils_functions.dart';
 
 class TransactionRegisterScreen extends StatefulWidget {
   static String id = 'transaction_register_screen';
-
   const TransactionRegisterScreen({super.key});
 
   @override
@@ -12,21 +15,19 @@ class TransactionRegisterScreen extends StatefulWidget {
 }
 
 class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
-  final Map<String, double> accounts = {
-    'Cuenta 1': 1500.00,
-    'Cuenta 2': 3200.00,
-  };
-  String selectedAccount = 'Cuenta 1';
-  double selectedBalance = 1500.00;
+  // Variables para la cuenta seleccionada
+  String selectedAccount = "";
+  double selectedBalance = 0.0;
 
+  // Lista de transacciones fake (puedes reemplazarla cuando implementes la parte real)
   List<Map<String, dynamic>> transactions = List.generate(
     10,
-        (index) => {
+    (index) => {
       'type': index % 2 == 0 ? 'Ingreso' : 'Gasto',
       'description': 'Transacción #$index',
       'amount': (index + 1) * 50.75,
       'date': '16 Mar 2025',
-      'category': null, // Puede ser null
+      'category': null,
     },
   );
 
@@ -81,39 +82,70 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     );
   }
 
-  void _selectAccount(String accountName) {
+  void _selectAccount(String accountTitle, double balance) {
     setState(() {
-      selectedAccount = accountName;
-      selectedBalance = accounts[accountName]!;
+      selectedAccount = accountTitle;
+      selectedBalance = balance;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Se utiliza FutureBuilder para cargar las cuentas reales del usuario
     return Scaffold(
       backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text("Registrar Movimiento")),
       body: Column(
-          children: [
-          // Fila de Cuentas Fake
+        children: [
+          // Fila de cuentas reales con scroll horizontal
           Padding(
             padding: const EdgeInsets.all(10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _fakeAccountContainer("Cuenta 1"),
-                _fakeAccountContainer("Cuenta 2"),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline, size: 30, color: Colors.blue),
-                  onPressed: () {
-                    // Acción para añadir cuenta
-                  },
-                ),
-              ],
+            child: FutureBuilder<List<Account>>(
+              future: Provider.of<TransactionRegisterProvider>(context, listen: false)
+                  .getAccountsForUser(context),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Text("Error al cargar las cuentas");
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Row(
+                    children: [
+                      const Text("No hay cuentas disponibles"),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline, size: 30, color: Colors.blue),
+                        onPressed: () {
+                          // Acción para añadir cuenta
+                        },
+                      )
+                    ],
+                  );
+                } else {
+                  final accounts = snapshot.data!;
+                  // Si aún no se ha seleccionado ninguna cuenta, se selecciona la primera.
+                  if (selectedAccount.isEmpty && accounts.isNotEmpty) {
+                    selectedAccount = accounts[0].title;
+                    selectedBalance = accounts[0].balance;
+                  }
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ...accounts.map((account) => _accountContainer(account)).toList(),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline, size: 30, color: Colors.blue),
+                          onPressed: () {
+                            // Acción para añadir cuenta
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
             ),
           ),
-
-          // Contenedor de Saldo de la cuenta seleccionada
+          // Contenedor de saldo de la cuenta seleccionada
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Container(
@@ -135,25 +167,22 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // Lista de Transacciones Fake
+          // Lista de transacciones (fake por ahora)
           Expanded(
             child: transactions.isEmpty
                 ? const Center(child: Text("No hay transacciones registradas."))
                 : ListView.builder(
-              itemCount: transactions.length,
-              itemBuilder: (context, index) {
-                final transaction = transactions[index];
-                return _transactionItem(transaction, index);
-              },
-            ),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      final transaction = transactions[index];
+                      return _transactionItem(transaction, index);
+                    },
+                  ),
           ),
         ],
       ),
-
-      // Botón Flotante +
+      // Botón flotante +
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showOptions(context),
         child: const Icon(Icons.add),
@@ -162,31 +191,31 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     );
   }
 
-  // Widget para cada cuenta fake
-  Widget _fakeAccountContainer(String accountName) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _selectAccount(accountName),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 5),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: selectedAccount == accountName ? Colors.blue.shade300 : Colors.blue.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            children: [
-              Text(accountName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              const SizedBox(height: 5),
-              Text("\$${accounts[accountName]!.toStringAsFixed(2)}", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            ],
-          ),
+  // Widget para cada cuenta (usando el objeto Account) con ancho fijo
+  Widget _accountContainer(Account account) {
+    return GestureDetector(
+      onTap: () => _selectAccount(account.title, account.balance),
+      child: Container(
+        width: 150, // ancho fijo
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: selectedAccount == account.title ? Colors.blue.shade300 : Colors.blue.shade100,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(account.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 5),
+            Text("${account.balance.toStringAsFixed(2)}€", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
         ),
       ),
     );
   }
 
-  // Widget para cada transacción fake con un menú desplegable
+  // Widget para cada transacción fake
   Widget _transactionItem(Map<String, dynamic> transaction, int index) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
