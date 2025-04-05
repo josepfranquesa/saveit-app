@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/account.dart';
+import '../../domain/transaction_register.dart';
 import '../../providers/transaction_register_provider.dart';
 import '../../utils/ui/app_colors.dart';
 import '../auth/login_screen.dart';
@@ -18,18 +19,14 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
   // Variable para la cuenta seleccionada (almacena el objeto Account completo)
   Account? selectedAccount;
 
-  // Lista de transacciones fake (puedes reemplazarla cuando implementes la parte real)
-  List<Map<String, dynamic>> transactions = List.generate(
-    10,
-    (index) => {
-      'type': index % 2 == 0 ? 'Ingreso' : 'Gasto',
-      'description': 'Transacción #$index',
-      'amount': (index + 1) * 50.75,
-      'date': '16 Mar 2025',
-      'category': null,
-    },
-  );
+  @override
+  void initState() {
+    super.initState();
+    // Se podría inicializar la cuenta seleccionada cuando se obtengan las cuentas,
+    // por eso en el FutureBuilder se asigna la primera si aún es null.
+  }
 
+  // Muestra las opciones de registro (manual o por cámara)
   void _showOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -63,29 +60,14 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     );
   }
 
-  void _deleteTransaction(int index) {
-    setState(() {
-      transactions.removeAt(index);
-    });
-  }
-
-  void _editTransaction(int index) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Editar transacción: ${transactions[index]['description']}")),
-    );
-  }
-
-  void _assignCategory(int index) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Asignar categoría a: ${transactions[index]['description']}")),
-    );
-  }
-
-  // Actualiza la cuenta seleccionada
+  // Actualiza la cuenta seleccionada y carga las transacciones de esa cuenta
   void _selectAccount(Account account) {
     setState(() {
       selectedAccount = account;
     });
+    // Llama al provider para obtener las transacciones de la cuenta seleccionada
+    Provider.of<TransactionRegisterProvider>(context, listen: false)
+        .getTransactionsForAccount(account.id);
   }
 
   @override
@@ -123,6 +105,11 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                   // Si aún no se ha seleccionado ninguna cuenta, se selecciona la primera.
                   if (selectedAccount == null && accounts.isNotEmpty) {
                     selectedAccount = accounts[0];
+                    // Cargamos sus transacciones
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      Provider.of<TransactionRegisterProvider>(context, listen: false)
+                          .getTransactionsForAccount(selectedAccount!.id);
+                    });
                   }
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -156,23 +143,34 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                 children: [
                   Text(selectedAccount?.title ?? "", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  Text("${selectedAccount?.balance.toStringAsFixed(2) ?? "0.00"}€",style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700),),
+                  Text(
+                    "${selectedAccount?.balance.toStringAsFixed(2) ?? "0.00"}€",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 10),
-          // Lista de transacciones (fake por ahora)
+          // Lista de transacciones obtenidas del provider
           Expanded(
-            child: transactions.isEmpty
-                ? const Center(child: Text("No hay transacciones registradas."))
-                : ListView.builder(
-                    itemCount: transactions.length,
+            child: Consumer<TransactionRegisterProvider>(
+              builder: (context, transactionProvider, child) {
+                if (transactionProvider.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (transactionProvider.transactions.isEmpty) {
+                  return const Center(child: Text("No hay transacciones registradas."));
+                } else {
+                  return ListView.builder(
+                    itemCount: transactionProvider.transactions.length,
                     itemBuilder: (context, index) {
-                      final transaction = transactions[index];
+                      final transaction = transactionProvider.transactions[index];
                       return _transactionItem(transaction, index);
                     },
-                  ),
+                  );
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -209,28 +207,29 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     );
   }
 
-  // Widget para cada transacción fake
-  Widget _transactionItem(Map<String, dynamic> transaction, int index) {
+  // Widget para cada transacción (usando el objeto Transaction)
+  Widget _transactionItem(Transaction transaction, int index) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: ListTile(
         leading: Icon(
-          transaction['type'] == 'Ingreso' ? Icons.arrow_circle_up : Icons.arrow_circle_down,
-          color: transaction['type'] == 'Ingreso' ? Colors.green : Colors.red,
+          transaction.amount >= 0 ? Icons.arrow_circle_up : Icons.arrow_circle_down,
+          color: transaction.amount >= 0 ? Colors.green : Colors.red,
           size: 24,
         ),
         title: Text(
-          transaction['description'] ?? "Sin descripción",
+          "Transacción #${transaction.id}",
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(transaction['date'] ?? "Fecha desconocida", style: const TextStyle(fontSize: 12, color: Colors.grey)),
             Text(
-              transaction['category'] != null && transaction['category'].toString().isNotEmpty
-                  ? transaction['category']
-                  : "Sin categoría",
+              transaction.createdAt != null ? transaction.createdAt.toString() : "Fecha desconocida",
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Text(
+              transaction.origin,
               style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
             ),
           ],
@@ -239,14 +238,23 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "€${(transaction['amount'] ?? 0.0).toStringAsFixed(2)}",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: transaction['type'] == 'Ingreso' ? Colors.green.shade700 : Colors.red.shade700),
+              "€${transaction.amount.toStringAsFixed(2)}",
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: transaction.amount >= 0 ? Colors.green.shade700 : Colors.red.shade700),
             ),
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == "edit") _editTransaction(index);
-                if (value == "delete") _deleteTransaction(index);
-                if (value == "category") _assignCategory(index);
+                if (value == "edit") {
+                  //_editTransaction(index);
+                }
+                if (value == "delete") {
+                  //_deleteTransaction(index);
+                }
+                if (value == "category") {
+                  //_assignCategory(index);
+                }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: "edit", child: Text("Editar")),

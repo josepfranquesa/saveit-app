@@ -27,14 +27,14 @@ class Transaction {
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      id: json['id'],
-      userId: json['user_id'],
-      accountId: json['account_id'],
-      objectiveId: json['objective_id'],
-      periodicId: json['periodic_id'],
-      subcategoryId: json['subcategory_id'],
-      amount: (json['amount'] as num).toDouble(),
-      origin: json['origin'],
+      id: json['id'] as int,
+      userId: json['user_id'] as int,
+      accountId: json['account_id'] as int,
+      objectiveId: json['objective_id'] != null ? json['objective_id'] as int : null,
+      periodicId: json['periodic_id'] != null ? json['periodic_id'] as int : null,
+      subcategoryId: json['subcategory_id'] != null ? json['subcategory_id'] as int : null,
+      amount: double.parse(json['amount'].toString()),
+      origin: json['origin'] as String,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
     );

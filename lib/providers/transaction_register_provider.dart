@@ -46,7 +46,6 @@ class TransactionRegisterProvider extends ChangeNotifier {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final userId = auth.user?.id;
       final response = await _api.getAccountsByUserId(userId!);
-
       final data = response.data;
       List<dynamic> accountsJson = [];
       if (data is Map<String, dynamic> && data.containsKey('accounts')) {
@@ -76,23 +75,20 @@ class TransactionRegisterProvider extends ChangeNotifier {
     try {
       isLoading = true;
       final response = await _api.get_transactions(accountId);
-
       _transactions = (response.data as List)
           .map((json) => Transaction.fromJson(json))
           .toList();
 
       isLoading = false;
-      notifyListeners();
     } on DioException catch (e) {
       isLoading = false;
-      notifyListeners();
       Clipboard.setData(ClipboardData(text: e.toString()));
       debugPrint('DioError fetching transactions: $e');
     } catch (e) {
       isLoading = false;
-      notifyListeners();
       Clipboard.setData(ClipboardData(text: e.toString()));
       debugPrint('Error fetching transactions: $e');
     }
   }
+
 }
