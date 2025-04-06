@@ -110,6 +110,14 @@ class ApiProvider extends ChangeNotifier {
     return await dio.delete("/account/user/$accountId/$userId");
   }
 
+  Future<Response<dynamic>> createAccount(int userId,String title, double balance) async {
+    return await dio.post("/accounts", data: {"user_id": userId, "title": title, "balance": balance});
+  }
+
+  Future<Response<dynamic>> joinAccount(int userId, int id) async {
+    return await dio.post("/accounts/join", data: {"user_id": userId, "id": id });
+  }
+
 
 /* **********************************************
    *                REGISTROS DEL USUARIO

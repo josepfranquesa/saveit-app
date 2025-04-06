@@ -22,50 +22,136 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Se podría inicializar la cuenta seleccionada cuando se obtengan las cuentas,
-    // por eso en el FutureBuilder se asigna la primera si aún es null.
+    // La cuenta seleccionada se asignará en el FutureBuilder si aún es null
   }
 
-  // Muestra las opciones de registro (manual o por cámara)
-  void _showOptions(BuildContext context) {
-    showModalBottomSheet(
+  void _showAddAccountOptions(BuildContext context) {
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit, color: Colors.blue),
-                title: const Text("Registro Manual"),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.green),
-                title: const Text("Cámara"),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
+        return AlertDialog(
+          title: const Text("Añadir Cuenta"),
+          content: const Text("Seleccione una opción:"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showJoinAccountDialog(context);
+              },
+              child: const Text("Unirse a una cuenta"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showCreateAccountDialog(context);
+              },
+              child: const Text("Crear una cuenta"),
+            ),
+          ],
         );
       },
     );
   }
 
-  // Actualiza la cuenta seleccionada y carga las transacciones de esa cuenta
+  // Diálogo para unirse a una cuenta
+  void _showJoinAccountDialog(BuildContext context) {
+    final TextEditingController _accountIdController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Unirse a una Cuenta"),
+          content: TextField(
+            controller: _accountIdController,
+            decoration: const InputDecoration(labelText: "ID de la Cuenta"),
+            keyboardType: TextInputType.number,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancelar
+              },
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              
+              onPressed: () {
+                String idText = _accountIdController.text.trim();
+                int? accountId = int.tryParse(idText);
+                if (accountId != null) {
+                  Provider.of<TransactionRegisterProvider>(context, listen: false).joinAccount(context,accountId);
+                  Navigator.of(context).pop();
+                  AppUtils.toast(context, title: "Solicitud enviada para unirse", type: "success");
+                } else {
+                  AppUtils.toast(context, title: "Ingrese un ID válido", type: "error");
+                }
+              },
+              child: const Text("Unirse"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Diálogo para crear una nueva cuenta
+  void _showCreateAccountDialog(BuildContext context) {
+    final TextEditingController _titleController = TextEditingController();
+    final TextEditingController _balanceController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Crear Cuenta"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: "Título"),
+              ),
+              TextField(
+                controller: _balanceController,
+                decoration: const InputDecoration(labelText: "Balance Inicial (€)"),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancelar
+              },
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () {
+                String title = _titleController.text.trim();
+                String balanceText = _balanceController.text.trim();
+                double? balance = double.tryParse(balanceText);
+                if (title.isNotEmpty && balance != null) {
+                  Provider.of<TransactionRegisterProvider>(context, listen: false).createAccount(context, title, balance);
+                  Navigator.of(context).pop();
+                  AppUtils.toast(context, title: "Cuenta creada", type: "success");
+                } else {
+                  AppUtils.toast(context, title: "Ingrese datos válidos", type: "error");
+                }
+              },
+              child: const Text("Crear"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Actualiza la cuenta seleccionada y carga sus transacciones
   void _selectAccount(Account account) {
     setState(() {
       selectedAccount = account;
     });
-    // Llama al provider para obtener las transacciones de la cuenta seleccionada
     Provider.of<TransactionRegisterProvider>(context, listen: false)
         .getTransactionsForAccount(account.id);
   }
@@ -95,17 +181,15 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline, size: 30, color: Colors.blue),
                         onPressed: () {
-                          // Acción para añadir cuenta
+                          _showAddAccountOptions(context);
                         },
                       )
                     ],
                   );
                 } else {
                   final accounts = snapshot.data!;
-                  // Si aún no se ha seleccionado ninguna cuenta, se selecciona la primera.
                   if (selectedAccount == null && accounts.isNotEmpty) {
                     selectedAccount = accounts[0];
-                    // Cargamos sus transacciones
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       Provider.of<TransactionRegisterProvider>(context, listen: false)
                           .getTransactionsForAccount(selectedAccount!.id);
@@ -119,7 +203,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                         IconButton(
                           icon: const Icon(Icons.add_circle_outline, size: 30, color: Colors.blue),
                           onPressed: () {
-                            // Acción para añadir cuenta
+                            _showAddAccountOptions(context);
                           },
                         ),
                       ],
@@ -141,7 +225,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               ),
               child: Column(
                 children: [
-                  Text(selectedAccount?.title ?? "", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(selectedAccount?.title ?? "",
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
                   Text(
                     "${selectedAccount?.balance.toStringAsFixed(2) ?? "0.00"}€",
@@ -176,7 +261,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
       ),
       // Botón flotante +
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showOptions(context),
+        onPressed: () => _showAddAccountOptions(context),
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -200,7 +285,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
           children: [
             Text(account.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 5),
-            Text("${account.balance.toStringAsFixed(2)}€", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            Text("${account.balance.toStringAsFixed(2)}€",
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -240,21 +326,14 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
             Text(
               "€${transaction.amount.toStringAsFixed(2)}",
               style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: transaction.amount >= 0 ? Colors.green.shade700 : Colors.red.shade700),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: transaction.amount >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+              ),
             ),
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == "edit") {
-                  //_editTransaction(index);
-                }
-                if (value == "delete") {
-                  //_deleteTransaction(index);
-                }
-                if (value == "category") {
-                  //_assignCategory(index);
-                }
+                // Aquí se pueden implementar las acciones para editar, eliminar o asignar categoría
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: "edit", child: Text("Editar")),

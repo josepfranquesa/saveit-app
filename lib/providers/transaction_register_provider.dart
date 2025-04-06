@@ -91,4 +91,48 @@ class TransactionRegisterProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> createAccount(BuildContext context,String title, double balance) async {
+    try {
+      isLoading = true;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final userId = auth.user!.id;
+      final response = await _api.createAccount(userId,title, balance);
+      final data = response.data;
+      if (data is Map<String, dynamic> && data.containsKey('account')) {
+        _accounts.add(Account.fromJson(data['account']));
+      }
+      isLoading = false;
+    } on DioException catch (e) {
+      isLoading = false;
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      debugPrint('DioError creating account: $e');
+    } catch (e) {
+      isLoading = false;
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      debugPrint('Error creating account: $e');
+    }
+  }
+  
+  Future<void> joinAccount(BuildContext context, int id) async {
+    try {
+      isLoading = true;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final userId = auth.user!.id;
+      final response = await _api.joinAccount(userId, id);
+      final data = response.data;
+      if (data is Map<String, dynamic> && data.containsKey('account')) {
+        _accounts.add(Account.fromJson(data['account']));
+      }
+      isLoading = false;
+    } on DioException catch (e) {
+      isLoading = false;
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      debugPrint('DioError creating account: $e');
+    } catch (e) {
+      isLoading = false;
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      debugPrint('Error creating account: $e');
+    }
+  }
+
 }
