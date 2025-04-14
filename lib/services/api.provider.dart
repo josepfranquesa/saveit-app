@@ -1,7 +1,9 @@
 // services/api.provider.dart
-// ignore_for_file: unnecessary_null_comparison, unused_element
 
+import 'dart:convert'; 
+import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/login_response.dart';
+import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -110,7 +112,7 @@ class ApiProvider extends ChangeNotifier {
     return await dio.delete("/account/user/$accountId/$userId");
   }
 
-  Future<Response<dynamic>> createAccount(int userId,String title, double balance) async {
+  Future<Response<dynamic>> createAccount(int userId, String title, double balance) async {
     return await dio.post("/accounts", data: {"user_id": userId, "title": title, "balance": balance});
   }
 
@@ -118,19 +120,75 @@ class ApiProvider extends ChangeNotifier {
     return await dio.post("/accounts/join", data: {"user_id": userId, "id": id });
   }
 
-
-/* **********************************************
+  /* **********************************************
    *                REGISTROS DEL USUARIO
    *********************************************** */
   Future<Response<dynamic>> get_transactions(int accountId) async {
     return await dio.get("/register/account/$accountId");
   }
   
-
   /* **********************************************
    *              ELIMINAR USUARIO
    *********************************************** */
   Future<Response<dynamic>> deleteUser(int userId) async {
     return await dio.delete("/users/$userId");
+  }
+
+  Future<List<Category>> getCategoriesForAccount(int accountId) async {
+    final response = await dio.get('/category/account/$accountId');
+    if (response.statusCode == 200) {
+      // Dio ya decodifica la respuesta JSON automáticamente,
+      // por lo tanto, usamos response.data en lugar de response.body.
+      final data = response.data;
+      return (data as List).map((e) => Category.fromJson(e)).toList();
+    } else {
+      throw Exception('Error al obtener categorías');
+    }
+  }
+
+  Future<List<SubCategory>> getSubcategoriesForCategory(int categoryId, int accountId) async {
+    final response = await dio.get('/subcategory/category/$categoryId/$accountId');
+    if (response.statusCode == 200) {
+      final data = response.data;
+      return (data as List).map((e) => SubCategory.fromJson(e)).toList();
+    } else {
+      throw Exception('Error al obtener subcategorías');
+    }
+  }
+
+  Future<void> createCategory({
+    required int accountId,
+    required String name,
+    required String type,
+  }) async {
+    final response = await dio.post('/category',
+      data: {  // <-- Se usa "data:" en lugar de "body:"
+        'account_id': accountId.toString(),
+        'name': name,
+        'type': type,
+      },
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Error al crear categoría');
+    }
+  }
+
+  Future<void> createSubCategory({
+    required int categoryId,
+    required int accountId,
+    required String name,
+    required String type,
+  }) async {
+    final response = await dio.post('/subcategory',
+      data: {  // <-- Se usa "data:" en lugar de "body:"
+        'category_id': categoryId.toString(),
+        'account_id': accountId.toString(),
+        'name': name,
+        'type': type,
+      },
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Error al crear subcategoría');
+    }
   }
 }

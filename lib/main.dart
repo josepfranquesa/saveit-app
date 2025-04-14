@@ -2,6 +2,7 @@ import 'package:SaveIt/app_config.dart';
 import 'package:SaveIt/presentation/auth/login_screen.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:SaveIt/providers/bottom_bar_provider.dart';
+import 'package:SaveIt/providers/coins_provider.dart';
 import 'package:SaveIt/providers/login_form_provider.dart';
 import 'package:SaveIt/providers/perfil_provider.dart';
 import 'package:SaveIt/providers/register_form_provider.dart';
@@ -33,6 +34,7 @@ class SaveItApp extends StatelessWidget {
         ListenableProxyProvider<ApiProvider, LoginFormProvider>(update: (_, api, __) => LoginFormProvider(api: api),),
         ListenableProxyProvider<ApiProvider, RegisterFormProvider>(update: (_, api, __) => RegisterFormProvider(api: api),),
         ListenableProxyProvider2<ApiProvider, AuthProvider, TransactionRegisterProvider>(update: (_, api, auth, __) => TransactionRegisterProvider(api: api, auth: auth),),
+        ListenableProxyProvider2<ApiProvider, AuthProvider, CoinsProvider>(update: (_, api, auth, __) => CoinsProvider(api: api, auth: auth),),
         ListenableProxyProvider2<ApiProvider, AuthProvider, PerfilProvider>(update: (_, api, auth, __) => PerfilProvider(api: api, auth: auth),),
       ],
       child: MaterialApp(
