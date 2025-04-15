@@ -8,7 +8,7 @@ import '../../utils/ui/app_colors.dart';
 class CoinsScreen extends StatefulWidget {
   static String id = 'coins_screen';
 
-  const CoinsScreen({super.key});
+  const CoinsScreen({Key? key}) : super(key: key);
 
   @override
   _CoinsScreenState createState() => _CoinsScreenState();
@@ -18,9 +18,10 @@ class _CoinsScreenState extends State<CoinsScreen> {
   @override
   void initState() {
     super.initState();
-    // Iniciamos la carga de las cuentas al montar la pantalla
+    // Al montar la pantalla, se cargan las cuentas del usuario.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CoinsProvider>(context, listen: false).getAccountsForUser(context);
+      Provider.of<CoinsProvider>(context, listen: false)
+          .getAccountsForUser(context);
     });
   }
 
@@ -35,12 +36,13 @@ class _CoinsScreenState extends State<CoinsScreen> {
       ),
       body: Column(
         children: [
+          // Fila horizontal de cuentas
           Padding(
             padding: const EdgeInsets.all(10),
             child: _buildAccountsRow(coinsProvider),
           ),
 
-          // 2) Botones para crear Categoría y Subcategoría
+          // Botones para crear Categoría y Subcategoría
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(
@@ -48,7 +50,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple, // Color lila del botón
+                      backgroundColor: Colors.purple, // Botón lila
                       foregroundColor: Colors.white, // Texto blanco
                     ),
                     onPressed: () {
@@ -76,7 +78,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
 
           const SizedBox(height: 10),
 
-          // 3) Lista de Categorías y Subcategorías
+          // Lista de Categorías y Subcategorías
           Expanded(
             child: _buildCategoriesAndSubcategories(coinsProvider, context),
           ),
@@ -85,12 +87,12 @@ class _CoinsScreenState extends State<CoinsScreen> {
     );
   }
 
-  // Utilizamos el método del provider para seleccionar la cuenta
+  // Selecciona la cuenta actual en el provider
   void _selectAccount(Account account, CoinsProvider coinsProvider) {
     coinsProvider.selectAccount(account);
   }
 
-  /// Construye la fila horizontal de cuentas
+  /// Construye la fila de cuentas
   Widget _buildAccountsRow(CoinsProvider coinsProvider) {
     if (coinsProvider.accounts.isEmpty) {
       return const Row(
@@ -102,16 +104,15 @@ class _CoinsScreenState extends State<CoinsScreen> {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: coinsProvider.accounts.map((account) {
-            return _accountContainer(account, coinsProvider);
-          }).toList(),
+          children: coinsProvider.accounts
+              .map((account) => _accountContainer(account, coinsProvider))
+              .toList(),
         ),
       );
     }
   }
 
-
-  /// Card / Container para cada cuenta
+  /// Contenedor para cada cuenta
   Widget _accountContainer(Account account, CoinsProvider coinsProvider) {
     final isSelected = coinsProvider.selectedAccount?.id == account.id;
     return GestureDetector(
@@ -128,93 +129,117 @@ class _CoinsScreenState extends State<CoinsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(account.title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 5),
             Text("${account.balance.toStringAsFixed(2)}€",
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
     );
   }
 
-  // Este es el método que construye la sección de categorías y subcategorías
-Widget _buildCategoriesAndSubcategories(CoinsProvider coinsProvider, BuildContext context) {
-  // Separamos las categorías según su tipo (convertimos a minúsculas para evitar problemas con mayúsculas)
-  final despesas = coinsProvider.categories
-      .where((cat) => cat.type.toLowerCase() == 'despesa')
-      .toList();
-  final ingresos = coinsProvider.categories
-      .where((cat) => cat.type.toLowerCase() == 'ingreso')
-      .toList();
+  /// Construye la sección de categorías y subcategorías
+  Widget _buildCategoriesAndSubcategories(
+      CoinsProvider coinsProvider, BuildContext context) {
+    // Separamos las categorías según su tipo
+    final despesas = coinsProvider.categories
+        .where((cat) => cat.type.toLowerCase() == 'despesa')
+        .toList();
+    final ingresos = coinsProvider.categories
+        .where((cat) => cat.type.toLowerCase() == 'ingreso')
+        .toList();
 
-  return SingleChildScrollView(
-    child: SizedBox(
-      width: MediaQuery.of(context).size.width, // Asegura que el row ocupe el ancho de la pantalla
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Columna izquierda: Despesa
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "Despesa",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    return SingleChildScrollView(
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Columna para "Despesa"
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      "Despesa",
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
                   ),
-                ),
-                // Se mapea cada categoría de despesa a un contenedor
-                ...despesas.map((category) => _buildCategoryTile(category, coinsProvider)).toList(),
-              ],
+                  ...despesas
+                      .map((category) =>
+                          _buildCategoryTile(category, coinsProvider))
+                      .toList(),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          // Columna derecha: Ingreso
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "Ingreso",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            const SizedBox(width: 10),
+            // Columna para "Ingreso"
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      "Ingreso",
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
                   ),
-                ),
-                // Se mapea cada categoría de ingreso a un contenedor
-                ...ingresos.map((category) => _buildCategoryTile(category, coinsProvider)).toList(),
-              ],
+                  ...ingresos
+                      .map((category) =>
+                          _buildCategoryTile(category, coinsProvider))
+                      .toList(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  // Función que construye cada "tarjeta" o contenedor para una categoría
+  /// Construye cada contenedor para la categoría y sus subcategorías
   Widget _buildCategoryTile(Category category, CoinsProvider coinsProvider) {
-    // Obtiene las subcategorías para la categoría actual (si ya se han cargado)
+    // Se obtienen las subcategorías cargadas para la categoría actual
     final subcategories = coinsProvider.subcategoriesMap[category.id] ?? [];
+
+    // Se define un color de fondo e incluso el color del título según el tipo
+    final bool isIngreso =
+        category.type.toLowerCase() == 'ingreso' ? true : false;
+    final Color tileColor = isIngreso ? Colors.green.shade50 : Colors.red.shade50;
+    final Color titleColor = isIngreso ? Colors.green : Colors.red;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: tileColor,
         border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(8),
       ),
       child: ExpansionTile(
-        title: Text(category.name),
-        // subtitle: Text("Tipo: ${category.type}"),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        collapsedBackgroundColor: tileColor,
+        backgroundColor: tileColor.withOpacity(0.7),
+        title: Text(
+          category.name,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: titleColor,
+          ),
+        ),
         initiallyExpanded: false,
         onExpansionChanged: (expanded) {
-          // Si se expande y aún no se han cargado las subcategorías y hay una cuenta seleccionada, se realiza la carga
+          // Si se expande y aún no se han cargado las subcategorías y existe una cuenta seleccionada, se cargan
           if (expanded &&
               subcategories.isEmpty &&
               coinsProvider.selectedAccount != null) {
@@ -226,12 +251,26 @@ Widget _buildCategoriesAndSubcategories(CoinsProvider coinsProvider, BuildContex
           if (coinsProvider.isLoadingSubcategories && subcategories.isEmpty)
             const Center(child: CircularProgressIndicator()),
           if (subcategories.isNotEmpty)
-            ...subcategories.map((subCat) {
-              return ListTile(
-                title: Text(subCat.name),
-                subtitle: Text("Tipo: ${subCat.type}"),
-              );
-            }).toList(),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.shade800,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: subcategories.map((subCat) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                    child: Text(
+                      subCat.name,
+                      style: const TextStyle(fontSize: 14, color: Colors.white),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
           if (!coinsProvider.isLoadingSubcategories && subcategories.isEmpty)
             const Padding(
               padding: EdgeInsets.all(8.0),
@@ -242,12 +281,11 @@ Widget _buildCategoriesAndSubcategories(CoinsProvider coinsProvider, BuildContex
     );
   }
 
-
   /// Diálogo para crear categoría
   Future<void> _showCreateCategoryDialog(CoinsProvider coinsProvider) async {
     final _formKey = GlobalKey<FormState>();
     String newCategoryName = "";
-    String newCategoryType = "";
+    String newCategoryType = "Ingreso"; // Valor inicial
 
     await showDialog(
       context: context,
@@ -261,8 +299,9 @@ Widget _buildCategoriesAndSubcategories(CoinsProvider coinsProvider, BuildContex
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
-                  decoration:
-                      const InputDecoration(labelText: "Nombre de la categoría"),
+                  decoration: const InputDecoration(
+                    labelText: "Nombre de la categoría",
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Ingrese un nombre";
@@ -271,16 +310,33 @@ Widget _buildCategoriesAndSubcategories(CoinsProvider coinsProvider, BuildContex
                   },
                   onSaved: (value) => newCategoryName = value ?? "",
                 ),
-                TextFormField(
-                  decoration:
-                      const InputDecoration(labelText: "Tipo de categoría"),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: "Tipo de categoría",
+                  ),
+                  value: newCategoryType,
+                  items: <String>["Ingreso", "Despesa"]
+                      .map((String type) => DropdownMenuItem<String>(
+                            value: type,
+                            child: Text(
+                              type,
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black),
+                            ),
+                          ))
+                      .toList(),
+                  style:
+                      const TextStyle(fontSize: 14, color: Colors.black),
+                  onChanged: (value) {
+                    newCategoryType = value ?? "";
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return "Ingrese un tipo";
+                      return "Seleccione un tipo";
                     }
                     return null;
                   },
-                  onSaved: (value) => newCategoryType = value ?? "",
                 ),
               ],
             ),

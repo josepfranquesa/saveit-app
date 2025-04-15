@@ -146,26 +146,22 @@ class ApiProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<SubCategory>> getSubcategoriesForCategory(int categoryId, int accountId) async {
+ Future<List<SubCategory>> getSubcategoriesForCategory(int categoryId, int accountId) async {
     final response = await dio.get('/subcategory/category/$categoryId/$accountId');
-    if (response.statusCode == 200) {
-      final data = response.data;
-      return (data as List).map((e) => SubCategory.fromJson(e)).toList();
-    } else {
-      throw Exception('Error al obtener subcategorías');
-    }
+    
+    // Se espera que response.data sea una lista de mapas
+    final List<dynamic> data = response.data;
+    
+    // Convertir cada objeto JSON en una instancia de SubCategory
+    return data.map((json) => SubCategory.fromJson(json as Map<String, dynamic>)).toList();
   }
 
-  Future<void> createCategory({
-    required int accountId,
-    required String name,
-    required String type,
-  }) async {
+  Future<void> createCategory({required int accountId,required String name,required String type,}) async {
     final response = await dio.post('/category',
       data: {  // <-- Se usa "data:" en lugar de "body:"
         'account_id': accountId.toString(),
-        'name': name,
-        'type': type,
+        'name_category': name,
+        'type_category': type,
       },
     );
     if (response.statusCode != 200 && response.statusCode != 201) {
