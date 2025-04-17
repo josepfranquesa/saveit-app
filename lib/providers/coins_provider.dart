@@ -133,20 +133,11 @@ class CoinsProvider extends ChangeNotifier {
   }
 
   /// Crea una nueva subcategoría dentro de una categoría
-  Future<void> createSubCategory({
-    required int categoryId,
-    required String name,
-    required String type,
-  }) async {
+  Future<void> createSubCategory({required int categoryId, required String name,}) async {
     if (selectedAccount == null) return;
     try {
       // Llamada al endpoint de crear subcategoría
-      await _api.createSubCategory(
-        categoryId: categoryId,
-        accountId: selectedAccount!.id,
-        name: name,
-        type: type,
-      );
+      await _api.createSubCategory(categoryId: categoryId, accountId: selectedAccount!.id, name: name,);
       // Luego refrescamos la lista de subcategorías para esa categoría
       await getSubcategoriesForCategory(categoryId, selectedAccount!.id);
     } catch (e) {

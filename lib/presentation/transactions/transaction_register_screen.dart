@@ -220,7 +220,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.shade100,
+                color: AppColors.softGreen,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
@@ -277,7 +277,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: selectedAccount?.id == account.id ? Colors.blue.shade300 : Colors.blue.shade100,
+          color: selectedAccount?.id == account.id ? AppColors.normalBlue : AppColors.softBlue,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -300,7 +300,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
       child: ListTile(
         leading: Icon(
           transaction.amount >= 0 ? Icons.arrow_circle_up : Icons.arrow_circle_down,
-          color: transaction.amount >= 0 ? Colors.green : Colors.red,
+          color: transaction.amount >= 0 ? AppColors.green : AppColors.red,
           size: 24,
         ),
         title: Text(
@@ -312,11 +312,11 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
           children: [
             Text(
               transaction.createdAt != null ? transaction.createdAt.toString() : "Fecha desconocida",
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: AppColors.grey),
             ),
             Text(
               transaction.origin,
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.grey),
             ),
           ],
         ),
@@ -328,7 +328,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: transaction.amount >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                color: transaction.amount >= 0 ? AppColors.green : AppColors.red,
               ),
             ),
             PopupMenuButton<String>(

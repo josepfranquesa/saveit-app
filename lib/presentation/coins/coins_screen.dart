@@ -50,8 +50,8 @@ class _CoinsScreenState extends State<CoinsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple, // Botón lila
-                      foregroundColor: Colors.white, // Texto blanco
+                      backgroundColor: AppColors.principal,
+                      foregroundColor: AppColors.white,
                     ),
                     onPressed: () {
                       _showCreateCategoryDialog(coinsProvider);
@@ -63,8 +63,8 @@ class _CoinsScreenState extends State<CoinsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.principal,
+                      foregroundColor: AppColors.white,
                     ),
                     onPressed: () {
                       _showCreateSubCategoryDialog(coinsProvider);
@@ -122,7 +122,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.shade300 : Colors.blue.shade100,
+          color: isSelected ? AppColors.normalBlue : AppColors.softBlue,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -215,14 +215,14 @@ class _CoinsScreenState extends State<CoinsScreen> {
     // Se define un color de fondo e incluso el color del título según el tipo
     final bool isIngreso =
         category.type.toLowerCase() == 'ingreso' ? true : false;
-    final Color tileColor = isIngreso ? Colors.green.shade50 : Colors.red.shade50;
-    final Color titleColor = isIngreso ? Colors.green : Colors.red;
+    final Color tileColor = isIngreso ? AppColors.softGreen : AppColors.softRed;
+    final Color titleColor = isIngreso ? AppColors.green : AppColors.red;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: tileColor,
-        border: Border.all(color: Colors.grey),
+        border: Border.all(color: AppColors.grey),
         borderRadius: BorderRadius.circular(8),
       ),
       child: ExpansionTile(
@@ -265,7 +265,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                     child: Text(
                       subCat.name,
-                      style: const TextStyle(fontSize: 14, color: Colors.white),
+                      style: const TextStyle(fontSize: 14, color: AppColors.white),
                     ),
                   );
                 }).toList(),
@@ -322,12 +322,12 @@ class _CoinsScreenState extends State<CoinsScreen> {
                             child: Text(
                               type,
                               style: const TextStyle(
-                                  fontSize: 14, color: Colors.black),
+                                  fontSize: 14, color: AppColors.black),
                             ),
                           ))
                       .toList(),
                   style:
-                      const TextStyle(fontSize: 14, color: Colors.black),
+                      const TextStyle(fontSize: 14, color: AppColors.black),
                   onChanged: (value) {
                     newCategoryType = value ?? "";
                   },
@@ -364,13 +364,11 @@ class _CoinsScreenState extends State<CoinsScreen> {
     );
   }
 
-  /// Diálogo para crear subcategoría
   Future<void> _showCreateSubCategoryDialog(CoinsProvider coinsProvider) async {
     final _formKey = GlobalKey<FormState>();
-    final _categoryIdController = TextEditingController();
     String newSubCatName = "";
-    String newSubCatType = "";
-    int newSubCatCategoryId = 0;
+    var categories = coinsProvider.categories;
+    Category? selectedCategory = categories.isNotEmpty ? categories.first : null;
 
     await showDialog(
       context: context,
@@ -380,49 +378,48 @@ class _CoinsScreenState extends State<CoinsScreen> {
           key: _formKey,
           child: SizedBox(
             width: 300,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _categoryIdController,
-                    keyboardType: TextInputType.number,
-                    decoration:
-                        const InputDecoration(labelText: "ID de la categoría"),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Ingrese un ID de categoría";
-                      }
-                      if (int.tryParse(value) == null) {
-                        return "El ID debe ser un número";
-                      }
-                      return null;
-                    },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Selector de categoría
+                DropdownButtonFormField<Category>(
+                  decoration: const InputDecoration(
+                    labelText: "Categoría",
                   ),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                        labelText: "Nombre de la subcategoría"),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Ingrese un nombre";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => newSubCatName = value ?? "",
+                  value: selectedCategory,
+                  items: categories.map((cat) {
+                    return DropdownMenuItem<Category>(
+                      value: cat,
+                      child: Text(
+                        cat.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.black,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (cat) {
+                    selectedCategory = cat;
+                  },
+                  validator: (value) =>
+                      value == null ? "Seleccione una categoría" : null,
+                ),
+                const SizedBox(height: 16),
+                // Nombre de la subcategoría
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: "Nombre de la subcategoría",
                   ),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                        labelText: "Tipo de la subcategoría"),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Ingrese un tipo";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => newSubCatType = value ?? "",
-                  ),
-                ],
-              ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Ingrese un nombre";
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => newSubCatName = value!.trim(),
+                ),
+              ],
             ),
           ),
         ),
@@ -434,17 +431,13 @@ class _CoinsScreenState extends State<CoinsScreen> {
           ElevatedButton(
             child: const Text("Crear"),
             onPressed: () async {
-              if (_formKey.currentState!.validate()) {
+              if (_formKey.currentState!.validate() && selectedCategory != null) {
                 _formKey.currentState!.save();
-                newSubCatCategoryId = int.parse(_categoryIdController.text);
                 await coinsProvider.createSubCategory(
-                  categoryId: newSubCatCategoryId,
+                  categoryId: selectedCategory!.id,
                   name: newSubCatName,
-                  type: newSubCatType,
                 );
-                if (mounted) {
-                  Navigator.pop(context);
-                }
+                if (mounted) Navigator.pop(context);
               }
             },
           ),
@@ -452,4 +445,5 @@ class _CoinsScreenState extends State<CoinsScreen> {
       ),
     );
   }
+
 }

@@ -75,7 +75,7 @@ class LoginScreen extends StatelessWidget {
                           suffixIcon: IconButton(
                             icon: Icon(
                               loginFormProvider.show_password ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: AppColors.textPrimary,
+                              color: AppColors.black,
                             ),
                             onPressed: () {
                               loginFormProvider.showPassword = !loginFormProvider.show_password;

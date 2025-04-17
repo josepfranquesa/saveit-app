@@ -158,7 +158,7 @@ class ApiProvider extends ChangeNotifier {
 
   Future<void> createCategory({required int accountId,required String name,required String type,}) async {
     final response = await dio.post('/category',
-      data: {  // <-- Se usa "data:" en lugar de "body:"
+      data: {
         'account_id': accountId.toString(),
         'name_category': name,
         'type_category': type,
@@ -169,18 +169,12 @@ class ApiProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createSubCategory({
-    required int categoryId,
-    required int accountId,
-    required String name,
-    required String type,
-  }) async {
+  Future<void> createSubCategory({required int categoryId, required int accountId, required String name,}) async {
     final response = await dio.post('/subcategory',
       data: {  // <-- Se usa "data:" en lugar de "body:"
-        'category_id': categoryId.toString(),
+        'id_category': categoryId.toString(),
         'account_id': accountId.toString(),
-        'name': name,
-        'type': type,
+        'name_subcat': name,
       },
     );
     if (response.statusCode != 200 && response.statusCode != 201) {
