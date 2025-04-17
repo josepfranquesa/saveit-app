@@ -18,11 +18,9 @@ class CoinsProvider extends ChangeNotifier {
   late AuthProvider _auth;
   bool initialized = false;
 
-  // Cuentas del usuario
   List<Account> _accounts = [];
   List<Account> get accounts => _accounts;
   
-  // Crea el campo para la cuenta seleccionada
   Account? _selectedAccount;
   Account? get selectedAccount => _selectedAccount;
 

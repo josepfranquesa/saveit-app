@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/login_response.dart';
 import 'package:SaveIt/domain/subcategory.dart';
+import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -171,7 +172,7 @@ class ApiProvider extends ChangeNotifier {
 
   Future<void> createSubCategory({required int categoryId, required int accountId, required String name,}) async {
     final response = await dio.post('/subcategory',
-      data: {  // <-- Se usa "data:" en lugar de "body:"
+      data: { 
         'id_category': categoryId.toString(),
         'account_id': accountId.toString(),
         'name_subcat': name,
@@ -181,4 +182,75 @@ class ApiProvider extends ChangeNotifier {
       throw Exception('Error al crear subcategoría');
     }
   }
+
+  /* **********************************************
+   *              OBJETIVOS Y LÍMITES
+   *********************************************** */
+
+  Future<List<Objective>> fetchGoals(int accountId) async {
+    final resp = await dio.get('/objective/$accountId');
+    final data = resp.data;
+    if (data is Map<String, dynamic> && data.containsKey('objectives')) {
+      final list = data['objectives'] as List<dynamic>;
+      return list
+          .map((json) => Objective.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<List<Objective>> fetchLimits(int accountId) async {
+    final resp = await dio.get('/limit/$accountId');
+    final data = resp.data;
+    if (data is Map<String, dynamic> && data.containsKey('objectives')) {
+      final list = data['objectives'] as List<dynamic>;
+      return list
+          .map((json) => Objective.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<Objective> createGoal({
+    required int creatorId,
+    required int accountId,
+    String? title,
+    double? total,
+  }) async {
+    final resp = await dio.post(
+      '/objective',
+      data: {
+        'creator_id': creatorId,
+        'account_id': accountId,
+        'total'      : total,
+        'title'      : title,
+      },
+    );
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      return Objective.fromJson(resp.data['objective']);
+    }
+    throw Exception('Error al crear objetivo');
+  }
+
+  Future<Objective> createLimit({
+    required int creatorId,
+    required int accountId,
+    required int subcategoryId,
+    required double total,
+  }) async {
+    final resp = await dio.post(
+      '/limit',
+      data: {
+        'creator_id'     : creatorId,
+        'account_id'     : accountId,
+        'subcategory_id' : subcategoryId,
+        'total'          : total,
+      },
+    );
+    if (resp.statusCode == 201 || resp.statusCode == 200) {
+      return Objective.fromJson(resp.data['objective']);
+    }
+    throw Exception('Error al crear límite');
+  }
+
 }

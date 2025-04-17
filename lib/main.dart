@@ -6,9 +6,8 @@ import 'package:SaveIt/providers/coins_provider.dart';
 import 'package:SaveIt/providers/login_form_provider.dart';
 import 'package:SaveIt/providers/perfil_provider.dart';
 import 'package:SaveIt/providers/register_form_provider.dart';
+import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/providers/transaction_register_provider.dart';
-//import 'package:SaveIt/providers/settings_provider.dart';
-//import 'package:SaveIt/providers/user_form_provider.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:SaveIt/utils/ui/theme.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +35,8 @@ class SaveItApp extends StatelessWidget {
         ListenableProxyProvider2<ApiProvider, AuthProvider, TransactionRegisterProvider>(update: (_, api, auth, __) => TransactionRegisterProvider(api: api, auth: auth),),
         ListenableProxyProvider2<ApiProvider, AuthProvider, CoinsProvider>(update: (_, api, auth, __) => CoinsProvider(api: api, auth: auth),),
         ListenableProxyProvider2<ApiProvider, AuthProvider, PerfilProvider>(update: (_, api, auth, __) => PerfilProvider(api: api, auth: auth),),
+        ListenableProxyProvider2<ApiProvider, AuthProvider, SavingsProvider>(update: (_, api, auth, __) => SavingsProvider(api: api, auth: auth),),
+
       ],
       child: MaterialApp(
         title: config!.appName,
