@@ -1,5 +1,6 @@
 // services/api.provider.dart
 
+import 'dart:async';
 import 'dart:convert'; 
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/login_response.dart';
@@ -209,6 +210,13 @@ class ApiProvider extends ChangeNotifier {
           .toList();
     }
     return [];
+  }
+
+  Future<List<SubCategory>> fetchSubCategories(int accountId) async {
+    final resp = await dio.get('/subcategory/account/$accountId');
+    final List<dynamic> data = resp.data;
+    
+    return data.map((json) => SubCategory.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   Future<Objective> createGoal({

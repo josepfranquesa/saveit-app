@@ -1,5 +1,6 @@
 // lib/providers/savings_provider.dart
 
+import 'package:SaveIt/domain/subcategory.dart';
 import 'package:flutter/material.dart';
 import 'package:SaveIt/domain/account.dart';
 import 'package:SaveIt/domain/objective.dart';
@@ -45,6 +46,9 @@ class SavingsProvider extends ChangeNotifier {
   List<Objective> goals = [];
   List<Objective> limits = [];
 
+  List<SubCategory> subCategories = [];
+
+
   /// 1) Obtiene cuentas y, si hay, selecciona la primera y carga objetivos/límites
   Future<List<Account>> getAccountsForUser(BuildContext context) async {
     try {
@@ -81,8 +85,23 @@ class SavingsProvider extends ChangeNotifier {
   /// 2) Selecciona otra cuenta y recarga objetivos/límites
   Future<void> selectAccount(Account account) async {
     _selectedAccount = account;
-    notifyListeners();
+    subCategories.clear();
+    await _loadSubCategories(account.id);
     await _loadObjectivesAndLimits(account.id);
+    notifyListeners();
+  }
+
+  Future<void> _loadSubCategories(int accountId) async {
+    isLoadingObjectives = true;
+    notifyListeners();
+    try {
+      subCategories = await _api.fetchSubCategories(accountId);
+    } catch (e) {
+      debugPrint('Error fetching subcategories: $e');
+      subCategories = [];
+    }
+    isLoadingObjectives = false;
+    notifyListeners();
   }
 
   Future<void> _loadObjectivesAndLimits(int accountId) async {
