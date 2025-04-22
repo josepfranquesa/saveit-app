@@ -1,4 +1,5 @@
 import 'package:SaveIt/domain/account.dart';
+import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/transaction_register.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:dio/dio.dart';
@@ -14,7 +15,6 @@ class TransactionRegisterProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   late ApiProvider _api;
-  late AuthProvider _auth;
   bool initialized = false;
 
   List<Account> _accounts = [];
@@ -29,7 +29,6 @@ class TransactionRegisterProvider extends ChangeNotifier {
     if (!_instancia.initialized) {
       _instancia = TransactionRegisterProvider._internal();
       _instancia._api = api;
-      _instancia._auth = auth;
       _instancia.initialized = true;
     }
     return _instancia;
@@ -134,5 +133,62 @@ class TransactionRegisterProvider extends ChangeNotifier {
       debugPrint('Error creating account: $e');
     }
   }
+  
+  Future<void> createRegister({
+    required int accountId,
+    required double amount,
+    required String origin,
+    int? objectiveId,
+    double? objectiveAmount,       // ← nuevo parámetro
+    int? subcategoryId,
+    int? periodicId,
+  }) async {
+    try {
+      isLoading = true;
+      notifyListeners();
 
+      final response = await _api.createRegister(
+        accountId: accountId,
+        amount: amount,
+        origin: origin,
+        objectiveId: objectiveId,
+        objectiveAmount: objectiveAmount, 
+        subcategoryId: subcategoryId,
+        periodicId: periodicId,
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data.containsKey('register')) {
+        _transactions.add(Transaction.fromJson(data['register']));
+        notifyListeners();
+      }
+    } on DioException catch (e) {
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      debugPrint('DioError creating register: $e');
+    } catch (e) {
+      Clipboard.setData(ClipboardData(text: e.toString()));
+      debugPrint('Error creating register: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<Objective>> getObjectivesForAccount(int accountId) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      final List<Objective> goals = await _api.fetchGoals(accountId);
+      return goals;
+    } on DioException catch (e) {
+      debugPrint('DioError fetching objectives: $e');
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching objectives: $e');
+      return [];
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }

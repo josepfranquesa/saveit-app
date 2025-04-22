@@ -128,6 +128,36 @@ class ApiProvider extends ChangeNotifier {
   Future<Response<dynamic>> get_transactions(int accountId) async {
     return await dio.get("/register/account/$accountId");
   }
+
+  Future<Response<Map<String, dynamic>>> createRegister({
+    required int accountId,
+    required double amount,
+    required String origin,
+    int? objectiveId,
+    double? objectiveAmount,
+    int? subcategoryId,
+    int? periodicId,
+  }) async {
+    final Map<String, dynamic> body = {
+      'amount': amount,
+      'origin': origin,
+      if (objectiveId != null) 'objectiveId': objectiveId,
+      if (objectiveAmount != null) 'objectiveAmount': objectiveAmount,
+      if (subcategoryId != null) 'subcategoryId': subcategoryId,
+      if (periodicId != null) 'periodicId': periodicId,
+    };
+
+    try {
+      final response = await dio.post<Map<String, dynamic>>(
+        '/register/account/$accountId',
+        data: body,
+      );
+      return response;
+    } on DioException {
+      rethrow;
+    }
+  }
+
   
   /* **********************************************
    *              ELIMINAR USUARIO

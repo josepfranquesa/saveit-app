@@ -1,10 +1,10 @@
+import 'package:SaveIt/domain/objective.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/account.dart';
 import '../../domain/transaction_register.dart';
 import '../../providers/transaction_register_provider.dart';
 import '../../utils/ui/app_colors.dart';
-import '../auth/login_screen.dart';
 import '../../utils/helpers/utils_functions.dart';
 
 class TransactionRegisterScreen extends StatefulWidget {
@@ -24,6 +24,171 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     super.initState();
     // La cuenta seleccionada se asignará en el FutureBuilder si aún es null
   }
+
+  Future<void> _showCreateRegisterDialog(BuildContext context) async {
+    final _formKey = GlobalKey<FormState>();
+    String origin = "";
+    double amount = 0.0;
+    double enteredAmount = 0.0;
+    int? selectedObjectiveId;
+    double objectiveAmount = 0.0;
+    final _amountController = TextEditingController();
+
+    final prov = Provider.of<TransactionRegisterProvider>(context, listen: false);
+    if (selectedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Debe seleccionar una cuenta primero")),
+      );
+      return;
+    }
+
+    // Carga list de objetivos antes de abrir el diálogo
+    final List<Objective> objectives =
+        await prov.getObjectivesForAccount(selectedAccount!.id);
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Nuevo Registro"),
+            content: Form(
+              key: _formKey,
+              child: SizedBox(
+                width: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Origen / título de la transacción
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: "Origen"),
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? "Ingrese un origen" : null,
+                      onSaved: (v) => origin = v!.trim(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Importe (puede ser negativo para gasto)
+                    TextFormField(
+                      controller: _amountController,
+                      decoration: const InputDecoration(labelText: "Importe"),
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true, signed: true),
+                      onChanged: (v) {
+                        final parsed = double.tryParse(v);
+                        setState(() {
+                          enteredAmount = parsed != null ? parsed : 0.0;
+                        });
+                      },
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return "Ingrese un importe";
+                        if (double.tryParse(v) == null) return "Importe inválido";
+                        return null;
+                      },
+                      onSaved: (v) => amount = double.parse(v!),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Sólo mostramos el selector de objetivo si el importe es positivo
+                    if (enteredAmount > 0) ...[
+                      DropdownButtonFormField<int>(
+                        decoration: const InputDecoration(
+                          labelText: "Asociar a objetivo",
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.black,
+                        ),                        
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text("— Ninguno —"),
+                          ),
+                          ...objectives.map((obj) => DropdownMenuItem<int>(
+                                value: obj.id,
+                                child: Text(obj.title ?? 'Sin título'),
+                              )),
+                        ],
+                        value: selectedObjectiveId,
+                        onChanged: (id) => setState(() {
+                          selectedObjectiveId = id;
+                        }),
+                        // Permitimos null como opción inicial
+                        validator: (_) => null,
+                      ),
+
+                      // Si elegimos un objetivo distinto de "ninguno",
+                      // mostramos el campo para la parte de importe
+                      if (selectedObjectiveId != null) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: "Importe para objetivo",
+                          ),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          validator: (v) {
+                            if (selectedObjectiveId != null) {
+                              if (v == null || v.isEmpty) {
+                                return "Ingrese un valor para el objetivo";
+                              }
+                              if (double.tryParse(v) == null) {
+                                return "Importe inválido";
+                              }
+                              if (double.parse(v) > enteredAmount) {
+                                return "No puede exceder el importe total";
+                              }
+                            }
+                            return null;
+                          },
+                          onSaved: (v) {
+                            if (v != null && v.isNotEmpty) {
+                              objectiveAmount = double.parse(v);
+                            }
+                          },
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text("Cancelar"),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              ElevatedButton(
+                child: const Text("Crear"),
+                onPressed: () async {
+                  if (!_formKey.currentState!.validate()) return;
+                  _formKey.currentState!.save();
+
+                  await prov.createRegister(
+                    accountId: selectedAccount!.id,
+                    amount: amount,
+                    origin: origin,
+                    objectiveId: selectedObjectiveId,
+                    objectiveAmount:
+                        selectedObjectiveId != null ? objectiveAmount : null,
+                    subcategoryId: null,
+                    periodicId: null,
+                  );
+
+                  if (context.mounted) Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    _amountController.dispose();
+  }
+
+
 
   void _showAddAccountOptions(BuildContext context) {
     showDialog(
@@ -181,7 +346,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline, size: 30, color: Colors.blue),
                         onPressed: () {
-                          _showAddAccountOptions(context);
+                          _showCreateRegisterDialog(context);
                         },
                       )
                     ],
@@ -261,7 +426,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
       ),
       // Botón flotante +
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddAccountOptions(context),
+        onPressed: () => _showCreateRegisterDialog(context), 
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -348,3 +513,6 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     );
   }
 }
+
+  
+
