@@ -2,6 +2,7 @@ import 'package:SaveIt/domain/account.dart';
 import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/transaction_register.dart';
+import 'package:SaveIt/domain/user.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +72,10 @@ class TransactionRegisterProvider extends ChangeNotifier {
       debugPrint('General error fetching accounts: $e');
       return [];
     }
+  }
+
+  Future<List<User>> getUsersForAccount(int accountId) {
+    return _api.getUsersForAccount(accountId);
   }
 
   Future<void> getTransactionsForAccount(int accountId) async {

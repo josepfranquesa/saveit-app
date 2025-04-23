@@ -290,4 +290,20 @@ class ApiProvider extends ChangeNotifier {
     throw Exception('Error al crear límite');
   }
 
+  Future<List<User>> getUsersForAccount(int accountId) async {
+    try {
+      final response = await dio.get('/users/account/$accountId');
+      
+      final List<dynamic> raw = response.data as List<dynamic>? ?? [];
+
+      return raw
+          .map((e) => User.fromMap(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, st) {
+      debugPrint('Error fetching users for account $accountId: $e\n$st');
+      return [];
+    }
+  }
+
+
 }
