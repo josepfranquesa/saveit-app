@@ -6,6 +6,7 @@ import '../../domain/transaction_register.dart';
 import '../../providers/transaction_register_provider.dart';
 import '../../utils/ui/app_colors.dart';
 import '../../utils/helpers/utils_functions.dart';
+import 'package:intl/intl.dart';
 
 class TransactionRegisterScreen extends StatefulWidget {
   static String id = 'transaction_register_screen';
@@ -30,6 +31,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     String origin = "";
     double amount = 0.0;
     double enteredAmount = 0.0;
+    int? selectedSubcategoryId;
     int? selectedObjectiveId;
     double objectiveAmount = 0.0;
     final _amountController = TextEditingController();
@@ -42,15 +44,19 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
       return;
     }
 
-    // Carga list de objetivos antes de abrir el diálogo
-    final List<Objective> objectives =
-        await prov.getObjectivesForAccount(selectedAccount!.id);
+    // 1) Cargamos objetivos y subcategorías antes de abrir el diálogo
+    final List<Objective> objectives = await prov.getObjectivesForAccount(selectedAccount!.id);
+    await prov.getCatAndSubcategoriesForAccount(selectedAccount!.id);
 
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (context, setState) {
+          // Filtramos subcategorías según signo del importe
+          final filteredSubs = enteredAmount > 0
+                ? prov.subCategories.where((s) => s.categoryType == 'Ingreso').toList()
+                : prov.subCategories.where((s) => s.categoryType == 'Despesa').toList();
           return AlertDialog(
             title: const Text("Nuevo Registro"),
             content: Form(
@@ -60,7 +66,6 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Origen / título de la transacción
                     TextFormField(
                       decoration: const InputDecoration(labelText: "Origen"),
                       validator: (v) =>
@@ -68,18 +73,14 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                       onSaved: (v) => origin = v!.trim(),
                     ),
                     const SizedBox(height: 16),
-
-                    // Importe (puede ser negativo para gasto)
                     TextFormField(
                       controller: _amountController,
                       decoration: const InputDecoration(labelText: "Importe"),
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true, signed: true),
                       onChanged: (v) {
-                        final parsed = double.tryParse(v);
-                        setState(() {
-                          enteredAmount = parsed != null ? parsed : 0.0;
-                        });
+                        final parsed = double.tryParse(v) ?? 0.0;
+                        setState(() => enteredAmount = parsed);
                       },
                       validator: (v) {
                         if (v == null || v.isEmpty) return "Ingrese un importe";
@@ -88,19 +89,33 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                       },
                       onSaved: (v) => amount = double.parse(v!),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Sólo mostramos el selector de objetivo si el importe es positivo
+                    if (enteredAmount != 0) ...[
+                      DropdownButtonFormField<int>(
+                        decoration: const InputDecoration(labelText: "Subcategoría"),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text("— Ninguna —"),
+                          ),
+                          ...filteredSubs.map((sub) => DropdownMenuItem<int>(
+                                value: sub.id,
+                                child: Text(sub.name),
+                              )),
+                        ],
+                        value: selectedSubcategoryId,
+                        onChanged: (id) => setState(() {
+                          selectedSubcategoryId = id;
+                        }),
+                        validator: (_) => null,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                     if (enteredAmount > 0) ...[
                       DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(
-                          labelText: "Asociar a objetivo",
-                        ),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.black,
-                        ),                        
+                        decoration: const InputDecoration(labelText: "Asociar a objetivo"),
+                        style: Theme.of(context).textTheme.bodyLarge,
                         items: [
                           const DropdownMenuItem<int>(
                             value: null,
@@ -115,12 +130,9 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                         onChanged: (id) => setState(() {
                           selectedObjectiveId = id;
                         }),
-                        // Permitimos null como opción inicial
                         validator: (_) => null,
                       ),
 
-                      // Si elegimos un objetivo distinto de "ninguno",
-                      // mostramos el campo para la parte de importe
                       if (selectedObjectiveId != null) ...[
                         const SizedBox(height: 16),
                         TextFormField(
@@ -134,10 +146,9 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                               if (v == null || v.isEmpty) {
                                 return "Ingrese un valor para el objetivo";
                               }
-                              if (double.tryParse(v) == null) {
-                                return "Importe inválido";
-                              }
-                              if (double.parse(v) > enteredAmount) {
+                              final parsed = double.tryParse(v);
+                              if (parsed == null) return "Importe inválido";
+                              if (parsed > enteredAmount) {
                                 return "No puede exceder el importe total";
                               }
                             }
@@ -167,13 +178,14 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                   _formKey.currentState!.save();
 
                   await prov.createRegister(
+                    context: context,
                     accountId: selectedAccount!.id,
                     amount: amount,
                     origin: origin,
                     objectiveId: selectedObjectiveId,
                     objectiveAmount:
-                        selectedObjectiveId != null ? objectiveAmount : null,
-                    subcategoryId: null,
+                    selectedObjectiveId != null ? objectiveAmount : null,
+                    subcategoryId: selectedSubcategoryId,
                     periodicId: null,
                   );
 
@@ -185,10 +197,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
         },
       ),
     );
-    _amountController.dispose();
   }
-
-
 
   void _showAddAccountOptions(BuildContext context) {
     showDialog(
@@ -460,28 +469,37 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
 
   // Widget para cada transacción (usando el objeto Transaction)
   Widget _transactionItem(Transaction transaction, int index) {
+    final dateStr = DateFormat('HH:mm dd/MM/yyyy').format(transaction.createdAt);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: ListTile(
         leading: Icon(
-          transaction.amount >= 0 ? Icons.arrow_circle_up : Icons.arrow_circle_down,
+          transaction.amount >= 0
+              ? Icons.arrow_circle_up
+              : Icons.arrow_circle_down,
           color: transaction.amount >= 0 ? AppColors.green : AppColors.red,
           size: 24,
         ),
         title: Text(
-          "Transacción #${transaction.id}",
+          transaction.origin,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              transaction.createdAt != null ? transaction.createdAt.toString() : "Fecha desconocida",
-              style: const TextStyle(fontSize: 12, color: AppColors.grey),
+              transaction.subcategoryName ?? 'No hay categoría asignada',
+              style: const TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.normal,
+                color: AppColors.grey,
+              ),
             ),
+            const SizedBox(height: 4),
             Text(
-              transaction.origin,
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.grey),
+              dateStr,
+              style: const TextStyle(fontSize: 12, color: AppColors.grey),
             ),
           ],
         ),
@@ -493,25 +511,28 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: transaction.amount >= 0 ? AppColors.green : AppColors.red,
+                color:
+                    transaction.amount >= 0 ? AppColors.green : AppColors.red,
               ),
             ),
             PopupMenuButton<String>(
               onSelected: (value) {
-                // Aquí se pueden implementar las acciones para editar, eliminar o asignar categoría
+                // acciones editar, categoría, eliminar…
               },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: "edit", child: Text("Editar")),
-                const PopupMenuItem(value: "category", child: Text("Asignar categoría")),
-                const PopupMenuItem(value: "delete", child: Text("Eliminar")),
-              ],
               icon: const Icon(Icons.more_vert, size: 20),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: "edit", child: Text("Editar")),
+                PopupMenuItem(
+                    value: "category", child: Text("Asignar categoría")),
+                PopupMenuItem(value: "delete", child: Text("Eliminar")),
+              ],
             ),
           ],
         ),
       ),
     );
   }
+
 }
 
   

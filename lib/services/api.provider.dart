@@ -1,7 +1,6 @@
 // services/api.provider.dart
 
 import 'dart:async';
-import 'dart:convert'; 
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/login_response.dart';
 import 'package:SaveIt/domain/subcategory.dart';
@@ -30,13 +29,8 @@ class ApiProvider extends ChangeNotifier {
     if (!_instancia.initialized) {
       _instancia = ApiProvider._internal();
       _instancia.dio = Dio(options);
-      if (url != null) {
-        _instancia.dio.options.baseUrl = url;
-        _instancia.url = url;
-      }
-      if (_instancia.dio.options.baseUrl == null) {
-        throw Exception("Please provide a base url for the api provider");
-      }
+      _instancia.dio.options.baseUrl = url;
+      _instancia.url = url;
       _instancia.initialized = true;
     }
     return _instancia;
@@ -135,21 +129,24 @@ class ApiProvider extends ChangeNotifier {
     required String origin,
     int? objectiveId,
     double? objectiveAmount,
-    int? subcategoryId,
-    int? periodicId,
+    int? subcategory_id,
+    int? periodicId, 
+    required int userId, 
   }) async {
     final Map<String, dynamic> body = {
+      'user_id': userId,
+      'account_id': accountId,
       'amount': amount,
       'origin': origin,
       if (objectiveId != null) 'objectiveId': objectiveId,
       if (objectiveAmount != null) 'objectiveAmount': objectiveAmount,
-      if (subcategoryId != null) 'subcategoryId': subcategoryId,
+      if (subcategory_id != null) 'subcategory_id': subcategory_id,
       if (periodicId != null) 'periodicId': periodicId,
     };
 
     try {
       final response = await dio.post<Map<String, dynamic>>(
-        '/register/account/$accountId',
+        '/register/account',
         data: body,
       );
       return response;
@@ -244,9 +241,11 @@ class ApiProvider extends ChangeNotifier {
 
   Future<List<SubCategory>> fetchSubCategories(int accountId) async {
     final resp = await dio.get('/subcategory/account/$accountId');
+    debugPrint('RAW subcategories response: ${resp.data}');
     final List<dynamic> data = resp.data;
-    
-    return data.map((json) => SubCategory.fromJson(json as Map<String, dynamic>)).toList();
+    return data
+      .map((json) => SubCategory.fromJson(json as Map<String, dynamic>))
+      .toList();
   }
 
   Future<Objective> createGoal({

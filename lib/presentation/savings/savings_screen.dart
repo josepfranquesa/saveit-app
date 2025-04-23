@@ -261,8 +261,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
             for (final sub in subCategories) {
               final isNewCategory = sub.categoryId != lastCategoryId;
               final displayName = isNewCategory
-                  ? sub.name!.toUpperCase()
-                  : sub.name!.toLowerCase();
+                  ? sub.name.toUpperCase()
+                  : sub.name.toLowerCase();
               lastCategoryId = sub.categoryId;
               subcategoryTiles.add(
                 RadioListTile<SubCategory>(
@@ -346,9 +346,6 @@ class _SavingsScreenState extends State<SavingsScreen> {
     if (items.isEmpty) {
       return const Center(child: Text('No hay Límites'));
     }
-
-    final prov = Provider.of<SavingsProvider>(context, listen: false);
-
     return Container(
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(

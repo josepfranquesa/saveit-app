@@ -17,7 +17,6 @@ class LoginFormProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  late ApiProvider _api;
   bool initialized = false;
 
   //Constructor + SINGLETON
@@ -26,7 +25,6 @@ class LoginFormProvider extends ChangeNotifier {
   factory LoginFormProvider({required ApiProvider api}) {
     if(!_instancia.initialized) {
       _instancia = LoginFormProvider._internal();
-      _instancia._api = api;
 
       //init streams
       _instancia.initialized = true;

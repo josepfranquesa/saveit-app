@@ -2,7 +2,6 @@
 
 import 'package:SaveIt/presentation/auth/register_screen.dart';
 import 'package:SaveIt/presentation/nav/main_screen.dart';
-import 'package:SaveIt/presentation/transactions/transaction_register_screen.dart';
 import 'package:SaveIt/providers/login_form_provider.dart';
 import 'package:SaveIt/utils/helpers/utils_functions.dart';
 import 'package:SaveIt/utils/ui/app_colors.dart';

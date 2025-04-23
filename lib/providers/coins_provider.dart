@@ -15,7 +15,6 @@ class CoinsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   late ApiProvider _api;
-  late AuthProvider _auth;
   bool initialized = false;
 
   List<Account> _accounts = [];
@@ -37,7 +36,6 @@ class CoinsProvider extends ChangeNotifier {
     if (!_instancia.initialized) {
       _instancia = CoinsProvider._internal();
       _instancia._api = api;
-      _instancia._auth = auth;
       _instancia.initialized = true;
     }
     return _instancia;

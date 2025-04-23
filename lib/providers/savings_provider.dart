@@ -8,7 +8,6 @@ import 'package:SaveIt/services/api.provider.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
 class SavingsProvider extends ChangeNotifier {
   // Flags de carga
@@ -95,13 +94,17 @@ class SavingsProvider extends ChangeNotifier {
     isLoadingObjectives = true;
     notifyListeners();
     try {
-      subCategories = await _api.fetchSubCategories(accountId);
+      final allSubs = await _api.fetchSubCategories(accountId);
+      subCategories = allSubs
+          .where((s) => s.categoryType.toLowerCase() == 'despesa')
+          .toList();
     } catch (e) {
       debugPrint('Error fetching subcategories: $e');
       subCategories = [];
+    } finally {
+      isLoadingObjectives = false;
+      notifyListeners();
     }
-    isLoadingObjectives = false;
-    notifyListeners();
   }
 
   Future<void> _loadObjectivesAndLimits(int accountId) async {

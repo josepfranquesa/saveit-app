@@ -8,11 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const _TOKEN_KEY = "beltimel_token";
-  static const _TOKEN_PROTECTED = "beltimel_token_protected";
-  static const _USER_KEY = "beltimel_user";
-  static const _USER_PROTECTED = "beltimel_user_protected";
-
+  static const _TOKEN_KEY = "saveIt_token";
+  static const _TOKEN_PROTECTED = "saveIt_token_protected";
+  static const _USER_KEY = "saveIt_user";
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(
@@ -60,7 +58,7 @@ class AuthProvider extends ChangeNotifier {
     if(token!=null) {
       try {
         _api.setToken(token);
-        var resp = await refreshToken();
+        await refreshToken();
         return true;
       } on Exception {
         return false;
@@ -94,7 +92,6 @@ class AuthProvider extends ChangeNotifier {
   Future<LoginResponse> refreshToken() async {
     try {
       var resp = await _api.refreshToken();
-      bool setted = await setToken(Token(resp.access_token));
       setUser(resp.user);
       return resp;
     } on Exception {

@@ -1,7 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:SaveIt/presentation/nav/main_screen.dart';
-import 'package:SaveIt/presentation/transactions/transaction_register_screen.dart';
 import 'package:SaveIt/presentation/auth/login_screen.dart';
 import 'package:SaveIt/providers/register_form_provider.dart';
 import 'package:SaveIt/utils/helpers/utils_functions.dart';

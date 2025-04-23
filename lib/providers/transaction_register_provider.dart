@@ -1,5 +1,6 @@
 import 'package:SaveIt/domain/account.dart';
 import 'package:SaveIt/domain/objective.dart';
+import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/transaction_register.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:dio/dio.dart';
@@ -21,6 +22,8 @@ class TransactionRegisterProvider extends ChangeNotifier {
   List<Account> get accounts => _accounts;
   List<Transaction> _transactions = [];
   List<Transaction> get transactions => _transactions;
+  List<SubCategory> subCategories = [];
+
 
   // Constructor + SINGLETON
   static TransactionRegisterProvider _instancia = TransactionRegisterProvider._internal();
@@ -135,32 +138,36 @@ class TransactionRegisterProvider extends ChangeNotifier {
   }
   
   Future<void> createRegister({
+    required BuildContext context,
     required int accountId,
     required double amount,
     required String origin,
     int? objectiveId,
-    double? objectiveAmount,       // ← nuevo parámetro
+    double? objectiveAmount,
     int? subcategoryId,
     int? periodicId,
   }) async {
     try {
       isLoading = true;
       notifyListeners();
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final userId = auth.user!.id;
 
       final response = await _api.createRegister(
+        userId: userId,
         accountId: accountId,
         amount: amount,
         origin: origin,
         objectiveId: objectiveId,
-        objectiveAmount: objectiveAmount, 
-        subcategoryId: subcategoryId,
+        objectiveAmount: objectiveAmount,
+        subcategory_id: subcategoryId,
         periodicId: periodicId,
       );
 
-      final data = response.data;
-      if (data is Map<String, dynamic> && data.containsKey('register')) {
-        _transactions.add(Transaction.fromJson(data['register']));
-        notifyListeners();
+      // si fue exitoso, recargamos toda la lista del servidor
+      if (response.data is Map<String, dynamic> &&
+          response.data!.containsKey('register')) {
+        await getTransactionsForAccount(accountId);
       }
     } on DioException catch (e) {
       Clipboard.setData(ClipboardData(text: e.toString()));
@@ -191,4 +198,19 @@ class TransactionRegisterProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> getCatAndSubcategoriesForAccount(int accountId) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      subCategories = await _api.fetchSubCategories(accountId);
+    } catch (e) {
+      debugPrint('Error fetching subcategories: $e');
+      subCategories = [];
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
 }
