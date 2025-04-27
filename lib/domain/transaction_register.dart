@@ -6,7 +6,7 @@ class Transaction {
   final String origin;
   final DateTime createdAt;
   final int? subcategoryId;
-  final String? subcategoryName;
+  final String? nameCategory;    // Extras: solo este campo
   final int? objectiveId;
   final String? objectiveName;
 
@@ -18,35 +18,52 @@ class Transaction {
     required this.origin,
     required this.createdAt,
     this.subcategoryId,
-    this.subcategoryName,
+    this.nameCategory,           // ajustado
     this.objectiveId,
     this.objectiveName,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    // ID
     final rawId = json['id'];
     final id = rawId is int ? rawId : int.parse(rawId.toString());
+
+    // userId
     final rawUserId = json['user_id'];
-    final userId = rawUserId is int ? rawUserId : int.parse(rawUserId.toString());
+    final userId = rawUserId is int
+        ? rawUserId
+        : int.parse(rawUserId.toString());
+
+    // accountId
     final rawAccountId = json['account_id'];
-    final accountId = rawAccountId is int ? rawAccountId : int.parse(rawAccountId.toString());
+    final accountId = rawAccountId is int
+        ? rawAccountId
+        : int.parse(rawAccountId.toString());
+
+    // amount
     final rawAmount = json['amount'];
     final amount = rawAmount is num
         ? rawAmount.toDouble()
         : double.parse(rawAmount.toString());
+
+    // origin
     final origin = json['origin'] as String;
+
+    // createdAt
     final createdAt = DateTime.parse(json['created_at'] as String);
+
+    // subcategoryId + nameCategory
     int? subcategoryId;
-    String? subcategoryName;
+    String? nameCategory;
     final rawSub = json['subcategory_id'];
     if (rawSub != null) {
       subcategoryId = rawSub is int
           ? rawSub
           : int.parse(rawSub.toString());
-      if (json['subcategory'] is Map<String, dynamic>) {
-        subcategoryName = json['subcategory']['name'] as String?;
-      }
+      nameCategory = json['name_category'] as String?;
     }
+
+    // objective
     int? objectiveId;
     String? objectiveName;
     final rawObj = json['objective_id'];
@@ -67,7 +84,7 @@ class Transaction {
       origin: origin,
       createdAt: createdAt,
       subcategoryId: subcategoryId,
-      subcategoryName: subcategoryName,
+      nameCategory: nameCategory,
       objectiveId: objectiveId,
       objectiveName: objectiveName,
     );

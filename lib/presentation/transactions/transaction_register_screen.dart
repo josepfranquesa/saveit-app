@@ -15,25 +15,124 @@ class TransactionRegisterScreen extends StatefulWidget {
   const TransactionRegisterScreen({Key? key}) : super(key: key);
 
   @override
-  _TransactionRegisterScreenState createState() => _TransactionRegisterScreenState();
+  _TransactionRegisterScreenState createState() =>
+      _TransactionRegisterScreenState();
 }
 
-class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
+class _TransactionRegisterScreenState
+    extends State<TransactionRegisterScreen> {
   Account? selectedAccount;
+  late Future<List<Account>> _accountsFuture;
 
   @override
   void initState() {
     super.initState();
-    // Nothing here; first account will be set in FutureBuilder
+    final prov =
+        Provider.of<TransactionRegisterProvider>(context, listen: false);
+    // Carga las cuentas UNA VEZ y asigna la primera como selectedAccount
+    _accountsFuture = prov.getAccountsForUser(context);
+    _accountsFuture.then((accounts) {
+      if (accounts.isNotEmpty) {
+        setState(() {
+          selectedAccount = accounts.first;
+        });
+        prov.getTransactionsForAccount(selectedAccount!.id);
+      }
+    });
   }
 
-  /// Selecciona una cuenta y carga sus transacciones
+  /// Selecciona una cuenta y recarga sus transacciones
   void _selectAccount(Account account) {
     setState(() {
       selectedAccount = account;
     });
     Provider.of<TransactionRegisterProvider>(context, listen: false)
         .getTransactionsForAccount(account.id);
+  }
+
+  Future<void> _showEditRegisterDialog(BuildContext context, Transaction t) async {
+    // ¡Copia y adapta íntegro el contenido del _showCreateRegisterDialog!,
+    // inicializando controllers con t.origin y t.amount,
+    // y llamando a prov.updateRegister(...) en lugar de create.
+  }
+
+  // Diálogo de asignar categoría
+  Future<void> _showAssignCategoryDialog(BuildContext context, Transaction t) async {
+    final prov = Provider.of<TransactionRegisterProvider>(context, listen: false);
+    await prov.getCatAndSubcategoriesForAccount(selectedAccount!.id);
+    int? newCat = t.subcategoryId;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('Asignar Categoría'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Actual: ${t.nameCategory ?? '— Ninguna —'}'),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<int>(
+              decoration: const InputDecoration(labelText: 'Nueva categoría'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('— Ninguna —')),
+                ...prov.subCategories
+                    .where((s) => s.categoryType == (t.amount >= 0 ? 'Ingreso' : 'Despesa'))
+                    .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
+              ],
+              value: newCat,
+              onChanged: (id) => newCat = id,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              await prov.updateRegister(
+                context: context,
+                //registerId: t.id,
+                accountId: selectedAccount!.id,
+                amount: t.amount,
+                origin: t.origin,
+                subcategoryId: newCat,
+                // objectiveId: selectedObjectiveId,
+                    
+                // objectiveAmount: selectedObjectiveId != null
+                //   ? objectiveAmount
+                //   : null,
+
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Asignar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Diálogo de borrado
+  Future<void> _showDeleteConfirmationDialog(BuildContext context, Transaction t) async {
+    final prov = Provider.of<TransactionRegisterProvider>(context, listen: false);
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('Eliminar Registro'),
+        content: const Text('¿Seguro que deseas eliminar este registro?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
+            onPressed: () async {
+              await prov.deleteRegister(context, t.id);
+              Navigator.pop(context);
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Diálogo para crear un nuevo registro
@@ -47,7 +146,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     double objectiveAmount = 0.0;
     final amountController = TextEditingController();
 
-    final prov = Provider.of<TransactionRegisterProvider>(context, listen: false);
+    final prov =
+        Provider.of<TransactionRegisterProvider>(context, listen: false);
     if (selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debe seleccionar una cuenta primero')),
@@ -56,7 +156,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
     }
 
     // Carga objetivos y subcategorías antes de mostrar diálogo
-    final objectives = await prov.getObjectivesForAccount(selectedAccount!.id);
+    final objectives =
+        await prov.getObjectivesForAccount(selectedAccount!.id);
     await prov.getCatAndSubcategoriesForAccount(selectedAccount!.id);
 
     await showDialog(
@@ -64,7 +165,6 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(
         builder: (context, setState) {
-          // Filtra subcategorías según signo de enteredAmount
           final filteredSubs = enteredAmount > 0
               ? prov.subCategories
                   .where((s) => s.categoryType == 'Ingreso')
@@ -92,24 +192,26 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                     // Importe
                     TextFormField(
                       controller: amountController,
-                      decoration: const InputDecoration(labelText: 'Importe'),
+                      decoration:
+                          const InputDecoration(labelText: 'Importe'),
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true, signed: true),
-                      onChanged: (v) => setState(() =>
-                          enteredAmount = double.tryParse(v) ?? 0.0),
+                      onChanged: (v) =>
+                          setState(() => enteredAmount = double.tryParse(v) ?? 0.0),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Ingrese un importe';
-                        if (double.tryParse(v) == null) return 'Importe inválido';
+                        if (double.tryParse(v) == null)
+                          return 'Importe inválido';
                         return null;
                       },
                       onSaved: (v) => amount = double.parse(v!),
                     ),
                     const SizedBox(height: 24),
-                    // Selector de subcategoría
+                    // Subcategoría
                     if (enteredAmount != 0) ...[
                       DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(
-                            labelText: 'Subcategoría'),
+                        decoration:
+                            const InputDecoration(labelText: 'Subcategoría'),
                         style: Theme.of(context).textTheme.bodyMedium,
                         items: [
                           const DropdownMenuItem<int>(
@@ -125,11 +227,10 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                         onChanged: (id) => setState(() {
                           selectedSubcategoryId = id;
                         }),
-                        validator: (_) => null,
                       ),
                       const SizedBox(height: 24),
                     ],
-                    // Selector de objetivo e importe para objetivo
+                    // Objetivo
                     if (enteredAmount > 0) ...[
                       DropdownButtonFormField<int>(
                         decoration: const InputDecoration(
@@ -149,15 +250,15 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                         onChanged: (id) => setState(() {
                           selectedObjectiveId = id;
                         }),
-                        validator: (_) => null,
                       ),
                       if (selectedObjectiveId != null) ...[
                         const SizedBox(height: 16),
                         TextFormField(
                           decoration: const InputDecoration(
                               labelText: 'Importe para objetivo'),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
                               return 'Ingrese un importe para el objetivo';
@@ -169,7 +270,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                             }
                             return null;
                           },
-                          onSaved: (v) => objectiveAmount = double.parse(v!),
+                          onSaved: (v) =>
+                              objectiveAmount = double.parse(v!),
                         ),
                       ],
                     ],
@@ -260,7 +362,8 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                 final idText = controller.text.trim();
                 final accountId = int.tryParse(idText);
                 if (accountId != null) {
-                  Provider.of<TransactionRegisterProvider>(context, listen: false)
+                  Provider.of<TransactionRegisterProvider>(context,
+                          listen: false)
                       .joinAccount(context, accountId);
                   Navigator.of(context).pop();
                   AppUtils.toast(context,
@@ -342,16 +445,19 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
       appBar: AppBar(title: const Text('Registrar Movimiento')),
       body: Column(
         children: [
+          // 1) Selección de cuenta
           Padding(
             padding: const EdgeInsets.all(10),
             child: FutureBuilder<List<Account>>(
-              future: Provider.of<TransactionRegisterProvider>(context, listen: false)
-                  .getAccountsForUser(context),
+              future: _accountsFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return const Text('Error al cargar las cuentas');
+                  return const Text(
+                      'Error al cargar las cuentas');
                 }
                 final accounts = snapshot.data ?? [];
                 if (accounts.isEmpty) {
@@ -359,19 +465,15 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                     children: [
                       const Text('No hay cuentas disponibles'),
                       IconButton(
-                        icon: const Icon(Icons.add_circle_outline,
-                            size: 30, color: Colors.blue),
-                        onPressed: () => _showCreateRegisterDialog(context),
+                        icon: const Icon(
+                            Icons.add_circle_outline,
+                            size: 30,
+                            color: Colors.blue),
+                        onPressed: () =>
+                            _showAddAccountOptions(context),
                       ),
                     ],
                   );
-                }
-                if (selectedAccount == null) {
-                  selectedAccount = accounts.first;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    Provider.of<TransactionRegisterProvider>(context, listen: false)
-                        .getTransactionsForAccount(selectedAccount!.id);
-                  });
                 }
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -379,9 +481,12 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                     children: [
                       ...accounts.map(_accountContainer),
                       IconButton(
-                        icon: const Icon(Icons.add_circle_outline,
-                            size: 30, color: Colors.blue),
-                        onPressed: () => _showCreateRegisterDialog(context),
+                        icon: const Icon(
+                            Icons.add_circle_outline,
+                            size: 30,
+                            color: Colors.blue),
+                        onPressed: () =>
+                            _showAddAccountOptions(context),
                       ),
                     ],
                   ),
@@ -390,6 +495,7 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
             ),
           ),
 
+          // 2) Información de la cuenta seleccionada
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Container(
@@ -401,14 +507,14 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               ),
               child: Stack(
                 children: [
-                  // 1️⃣ Row principal: título+saldo a la izquierda, nombres pegados con 8px
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      // Título + saldo
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             Text(
                               selectedAccount?.title ?? '',
@@ -429,65 +535,78 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                           ],
                         ),
                       ),
-
-                      // Solo 8px de separación
                       const SizedBox(width: 8),
-
-                      // Nombres de usuarios, sin expandirse demasiado
                       FutureBuilder<List<User>>(
-                        future: Provider.of<TransactionRegisterProvider>(context, listen: false)
-                            .getUsersForAccount(selectedAccount!.id),
+                        future:
+                            Provider.of<TransactionRegisterProvider>(
+                                    context,
+                                    listen: false)
+                                .getUsersForAccount(
+                                    selectedAccount!.id),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return const SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2),
                             );
                           } else if (snapshot.hasError) {
                             return const Text(
                               'Error',
-                              style: TextStyle(fontSize: 12, color: Colors.red),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red),
                             );
                           }
                           final users = snapshot.data ?? [];
                           if (users.isEmpty) {
                             return const Text(
                               '—',
-                              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle:
+                                      FontStyle.italic),
                             );
                           }
                           return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
-                            children: users.map((u) {
-                              return Text(
-                                u.name,
-                                style: const TextStyle(fontSize: 12),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              );
-                            }).toList(),
+                            children: users
+                                .map((u) => Text(
+                                      u.name,
+                                      style: const TextStyle(
+                                          fontSize: 12),
+                                      maxLines: 1,
+                                      overflow:
+                                          TextOverflow.ellipsis,
+                                    ))
+                                .toList(),
                           );
                         },
                       ),
                     ],
                   ),
-
-                  // 2️⃣ Icono de info mínimo en la esquina superior derecha
                   Positioned(
                     top: 26,
                     right: 220,
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints:
+                          const BoxConstraints(),
                       iconSize: 16,
-                      icon: const Icon(Icons.info_outline),
+                      icon: const Icon(
+                          Icons.info_outline),
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(
                           SnackBar(
-                            content: Text('ID de la cuenta: ${selectedAccount?.id}'),
-                            duration: const Duration(seconds: 2),
+                            content: Text(
+                                'ID de la cuenta: ${selectedAccount?.id}'),
+                            duration: const Duration(
+                                seconds: 2),
                           ),
                         );
                       },
@@ -499,20 +618,26 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
           ),
 
           const SizedBox(height: 10),
+
+          // 3) Listado de transacciones
           Expanded(
             child: Consumer<TransactionRegisterProvider>(
               builder: (context, prov, child) {
                 if (prov.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                      child:
+                          CircularProgressIndicator());
                 } else if (prov.transactions.isEmpty) {
                   return const Center(
-                    child: Text('No hay transacciones registradas.'),
+                    child: Text(
+                        'No hay transacciones registradas.'),
                   );
                 }
                 return ListView.builder(
                   itemCount: prov.transactions.length,
                   itemBuilder: (context, i) =>
-                      _transactionItem(prov.transactions[i], i),
+                      _transactionItem(
+                          prov.transactions[i], i),
                 );
               },
             ),
@@ -520,21 +645,22 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateRegisterDialog(context),
+        onPressed: () => _showCreateRegisterDialog(
+            context),
         child: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.centerFloat,
     );
   }
 
-
-  // Widget para cada cuenta
   Widget _accountContainer(Account account) {
     return GestureDetector(
       onTap: () => _selectAccount(account),
       child: Container(
         width: 150,
-        margin: const EdgeInsets.symmetric(horizontal: 5),
+        margin:
+            const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: selectedAccount?.id == account.id
@@ -547,24 +673,25 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
           children: [
             Text(account.title,
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 14)),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14)),
             const SizedBox(height: 5),
             Text('${account.balance.toStringAsFixed(2)}€',
                 style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold)),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       ),
     );
   }
 
-  // Widget para cada transacción
   Widget _transactionItem(Transaction transaction, int index) {
     final dateStr = DateFormat('HH:mm dd/MM/yyyy')
         .format(transaction.createdAt);
     return Card(
-      margin:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      margin: const EdgeInsets.symmetric(
+          horizontal: 10, vertical: 5),
       child: ListTile(
         leading: Icon(
           transaction.amount >= 0
@@ -581,10 +708,11 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
               fontSize: 14, fontWeight: FontWeight.w500),
         ),
         subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
             Text(
-              transaction.subcategoryName ??
+              transaction.nameCategory ??
                   'No hay categoría asignada',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.grey),
@@ -608,16 +736,24 @@ class _TransactionRegisterScreenState extends State<TransactionRegisterScreen> {
                       : AppColors.red),
             ),
             PopupMenuButton<String>(
-              onSelected: (value) {},
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    _showEditRegisterDialog(context, transaction);
+                    break;
+                  case 'category':
+                    _showAssignCategoryDialog(context, transaction);
+                    break;
+                  case 'delete':
+                    _showDeleteConfirmationDialog(context, transaction);
+                    break;
+                }
+              },
               icon: const Icon(Icons.more_vert, size: 20),
               itemBuilder: (_) => const [
-                PopupMenuItem(
-                    value: 'edit', child: Text('Editar')),
-                PopupMenuItem(
-                    value: 'category',
-                    child: Text('Asignar categoría')),
-                PopupMenuItem(
-                    value: 'delete', child: Text('Eliminar')),
+                PopupMenuItem(value: 'edit', child: Text('Editar')),
+                PopupMenuItem(value: 'category', child: Text('Asignar categoría')),
+                PopupMenuItem(value: 'delete', child: Text('Eliminar')),
               ],
             ),
           ],

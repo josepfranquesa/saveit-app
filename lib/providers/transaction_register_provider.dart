@@ -218,4 +218,51 @@ class TransactionRegisterProvider extends ChangeNotifier {
     }
   }
 
+
+  Future<void> updateRegister({
+    required BuildContext context,
+    required int accountId,
+    required double amount,
+    required String origin,
+    int? objectiveId,
+    double? objectiveAmount,
+    int? subcategoryId,
+    int? periodicId,
+  }) async {
+    // try {
+    //   isLoading = true;
+    //   notifyListeners();
+    //   final auth = Provider.of<AuthProvider>(context, listen: false);
+    //   final userId = auth.user!.id;
+
+    //   final response = await _api.updateRegister(
+    //     userId: userId,
+    //     accountId: accountId,
+    //     amount: amount,
+    //     origin: origin,
+    //     objectiveId: objectiveId,
+    //     objectiveAmount: objectiveAmount,
+    //     subcategory_id: subcategoryId,
+    //     periodicId: periodicId,
+    //   );
+
+    //   if (response.data is Map<String, dynamic> &&
+    //       response.data!.containsKey('register')) {
+    //     await getTransactionsForAccount(accountId);
+    //   }
+    // } on DioException catch (e) {
+    //   Clipboard.setData(ClipboardData(text: e.toString()));
+    //   debugPrint('DioError creating register: $e');
+    // } catch (e) {
+    //   Clipboard.setData(ClipboardData(text: e.toString()));
+    //   debugPrint('Error creating register: $e');
+    // } finally {
+    //   isLoading = false;
+    //   notifyListeners();
+    // }
+  }
+
+  Future<void> deleteRegister(BuildContext context, int registerId) async {
+
+  }
 }
