@@ -262,7 +262,51 @@ class TransactionRegisterProvider extends ChangeNotifier {
     // }
   }
 
-  Future<void> deleteRegister(BuildContext context, int registerId) async {
+  Future<void> updateCategoryForRegister({
+    required int registerId,
+    required int accountId,
+    int? categoryId,
+    required BuildContext context,
+  }) async {
+    try {
+      final resp = await _api.updateCatRegister(registerId, categoryId!);
 
+      if (resp.statusCode == 200 || resp.statusCode == 204) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Categoría actualizada')),
+        );
+        await getTransactionsForAccount(accountId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${resp.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ocurrió un error: $e')),
+      );
+    }
+  }
+
+  Future<void> deleteRegister(BuildContext context, int registerId, int accountId) async {
+    try {
+      // Llamada DELETE al endpoint correspondiente
+      final response = await _api.deleteRegister(registerId);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registro eliminado correctamente')),
+        );
+        await getTransactionsForAccount(accountId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar el registro')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ocurrió un error: $e')),
+      );
+    }
   }
 }

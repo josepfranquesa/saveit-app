@@ -155,6 +155,15 @@ class ApiProvider extends ChangeNotifier {
     }
   }
 
+
+  Future<Response<dynamic>> updateCatRegister(int registerId, int idCategory) async {
+    return await dio.put("/register/account/$registerId/update_category/$idCategory");
+  }
+
+  Future<Response<dynamic>> deleteRegister(int registerId) async {
+    return await dio.delete("/register/account/$registerId");
+  }
+
   
   /* **********************************************
    *              ELIMINAR USUARIO

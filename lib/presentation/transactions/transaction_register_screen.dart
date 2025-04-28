@@ -60,7 +60,9 @@ class _TransactionRegisterScreenState
   Future<void> _showAssignCategoryDialog(BuildContext context, Transaction t) async {
     final prov = Provider.of<TransactionRegisterProvider>(context, listen: false);
     await prov.getCatAndSubcategoriesForAccount(selectedAccount!.id);
-    int? newCat = t.subcategoryId;
+
+    int? selectedCatId = t.subcategoryId;
+
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -71,7 +73,7 @@ class _TransactionRegisterScreenState
           children: [
             Text('Actual: ${t.nameCategory ?? '— Ninguna —'}'),
             const SizedBox(height: 16),
-            DropdownButtonFormField<int>(
+            DropdownButtonFormField<int?>(
               decoration: const InputDecoration(labelText: 'Nueva categoría'),
               items: [
                 const DropdownMenuItem(value: null, child: Text('— Ninguna —')),
@@ -79,8 +81,8 @@ class _TransactionRegisterScreenState
                     .where((s) => s.categoryType == (t.amount >= 0 ? 'Ingreso' : 'Despesa'))
                     .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
               ],
-              value: newCat,
-              onChanged: (id) => newCat = id,
+              value: selectedCatId,
+              onChanged: (v) => selectedCatId = v,
             ),
           ],
         ),
@@ -88,19 +90,11 @@ class _TransactionRegisterScreenState
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () async {
-              await prov.updateRegister(
-                context: context,
-                //registerId: t.id,
+              await prov.updateCategoryForRegister(
+                registerId: t.id,
                 accountId: selectedAccount!.id,
-                amount: t.amount,
-                origin: t.origin,
-                subcategoryId: newCat,
-                // objectiveId: selectedObjectiveId,
-                    
-                // objectiveAmount: selectedObjectiveId != null
-                //   ? objectiveAmount
-                //   : null,
-
+                categoryId: selectedCatId,
+                context: context,
               );
               Navigator.pop(context);
             },
@@ -125,7 +119,7 @@ class _TransactionRegisterScreenState
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
             onPressed: () async {
-              await prov.deleteRegister(context, t.id);
+              await prov.deleteRegister(context, t.id, selectedAccount!.id);
               Navigator.pop(context);
             },
             child: const Text('Eliminar'),
