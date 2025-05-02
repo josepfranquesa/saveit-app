@@ -3,6 +3,7 @@ import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/transaction_register.dart';
 import 'package:SaveIt/domain/user.dart';
+import 'package:SaveIt/providers/account_list_provider.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -98,31 +99,33 @@ class TransactionRegisterProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createAccount(BuildContext context,String title, double balance) async {
-    try {
-      isLoading = true;
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final userId = auth.user!.id;
-      final response = await _api.createAccount(userId,title, balance);
-      final data = response.data;
-      if (data is Map<String, dynamic> && data.containsKey('account')) {
-        _accounts.add(Account.fromJson(data['account']));
-      }
-      isLoading = false;
-    } on DioException catch (e) {
-      isLoading = false;
-      Clipboard.setData(ClipboardData(text: e.toString()));
-      debugPrint('DioError creating account: $e');
-    } catch (e) {
-      isLoading = false;
-      Clipboard.setData(ClipboardData(text: e.toString()));
-      debugPrint('Error creating account: $e');
+  Future<void> createAccount(BuildContext ctx, String title, double balance) async {
+  try {
+    isLoading = true;
+    final auth = ctx.read<AuthProvider>();
+    final userId = auth.user!.id;
+    final resp = await _api.createAccount(userId, title, balance);
+    final data = resp.data;
+    if (data is Map<String, dynamic> && data.containsKey('account')) {
+      final newAcc = Account.fromJson(data['account']);
+      // 1) lo guardamos localmente
+      _accounts.add(newAcc);
+      // 2) y también en el AccountListProvider
+      ctx.read<AccountListProvider>().addAccount(newAcc);
     }
+  } catch (e) {
+    debugPrint('Error creando cuenta: $e');
+  } finally {
+    isLoading = false;
+    notifyListeners();
   }
+}
+
   
   Future<void> joinAccount(BuildContext context, int id) async {
     try {
       isLoading = true;
+      final accountListProv = context.read<AccountListProvider>();
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final userId = auth.user!.id;
       final response = await _api.joinAccount(userId, id);
@@ -131,6 +134,7 @@ class TransactionRegisterProvider extends ChangeNotifier {
         _accounts.add(Account.fromJson(data['account']));
       }
       isLoading = false;
+      getAccountsForUser(context);
     } on DioException catch (e) {
       isLoading = false;
       Clipboard.setData(ClipboardData(text: e.toString()));

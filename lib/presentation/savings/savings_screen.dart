@@ -3,6 +3,8 @@
 import 'package:SaveIt/domain/account.dart';
 import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/subcategory.dart';
+import 'package:SaveIt/providers/account_list_provider.dart';
+import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -19,26 +21,42 @@ class _SavingsScreenState extends State<SavingsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SavingsProvider>(context, listen: false)
-          .getAccountsForUser(context);
+    // 1) Cargo las cuentas globales
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProv = context.read<AuthProvider>();
+      final accountProv = context.read<AccountListProvider>();
+      final savingsProv = context.read<SavingsProvider>();
+
+      await accountProv.fetchAccounts(authProv.user!.id);
+
+      // 2) Inicializo SavingsProvider con la primera cuenta (si existe)
+      if (accountProv.accounts.isNotEmpty) {
+        savingsProv.selectAccount(accountProv.accounts.first);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final prov = Provider.of<SavingsProvider>(context);
+    final accountProv = context.watch<AccountListProvider>();
+    final savingsProv = context.watch<SavingsProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text('Ahorros')),
       body: Column(
         children: [
+          // --- 1) Fila de cuentas (desde AccountListProvider) ---
           Padding(
             padding: const EdgeInsets.all(10),
-            child: _buildAccountsRow(prov),
+            child: _buildAccountsRow(
+              accountProv.accounts,
+              accountProv.isLoading,
+              savingsProv,
+            ),
           ),
-          // --- Botones Crear Objetivo/Límite --- 
+
+          // --- 2) Botones Crear Objetivo/Límite ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Row(
@@ -49,9 +67,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                       backgroundColor: AppColors.principal,
                       foregroundColor: AppColors.white,
                     ),
-                    onPressed: () {
-                      _showCreateObjectiveDialog(prov);
-                    },
+                    onPressed: () => _showCreateObjectiveDialog(savingsProv),
                     child: const Text("+ Objetivo"),
                   ),
                 ),
@@ -62,25 +78,24 @@ class _SavingsScreenState extends State<SavingsScreen> {
                       backgroundColor: AppColors.principal,
                       foregroundColor: AppColors.white,
                     ),
-                    onPressed: () {
-                      _showCreateLimitDialog(prov);
-                    },
+                    onPressed: () => _showCreateLimitDialog(savingsProv),
                     child: const Text("+ Límite"),
                   ),
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: 16),
 
-          // --- Listado de LÍMITES y OBJETIVOS ---
+          // --- 3) Listado de Objetivos y Límites ---
           Expanded(
-            child: prov.isLoadingObjectives
+            child: savingsProv.isLoadingObjectives
                 ? const Center(child: CircularProgressIndicator())
                 : Row(
                     children: [
-                      Expanded(child: _buildObjectiveList(prov.goals)),
-                      Expanded(child: _buildLimitList(prov.limits)),
+                      Expanded(child: _buildObjectiveList(savingsProv.goals)),
+                      Expanded(child: _buildLimitList(savingsProv.limits)),
                     ],
                   ),
           ),
@@ -89,55 +104,35 @@ class _SavingsScreenState extends State<SavingsScreen> {
     );
   }
 
-  Widget _accountTile(Account acc, SavingsProvider prov) {
-    final isSelected = prov.selectedAccount?.id == acc.id;
-    return GestureDetector(
-      onTap: () => prov.selectAccount(acc),
-      child: Container(
-        width: 140,
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.principal : AppColors.softGreen,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Text(acc.title,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('\$${acc.balance.toStringAsFixed(2)}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAccountsRow(SavingsProvider prov) {
-    if (prov.accounts.isEmpty) {
+  Widget _buildAccountsRow(
+      List<Account> accounts,
+      bool isLoadingAccounts,
+      SavingsProvider savingsProv,
+  ) {
+    if (isLoadingAccounts) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (accounts.isEmpty) {
       return const Row(
-        children: [
-          Text("No hay cuentas disponibles"),
-        ],
-      );
-    } else {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: prov.accounts
-              .map((account) => _accountContainer(account, prov))
-              .toList(),
-        ),
+        children: [Text("No hay cuentas disponibles")],
       );
     }
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: accounts
+            .map((acc) => _accountContainer(acc, savingsProv))
+            .toList(),
+      ),
+    );
   }
 
   Widget _accountContainer(Account account, SavingsProvider prov) {
     final isSelected = prov.selectedAccount?.id == account.id;
     return GestureDetector(
-      onTap: () => _selectAccount(account, prov),
+      onTap: () => prov.selectAccount(account),
       child: Container(
-        width: 150, // ancho fijo
+        width: 150,
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -148,8 +143,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(account.title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 5),
             Text("${account.balance.toStringAsFixed(2)}€",
                 style: const TextStyle(
@@ -160,12 +155,6 @@ class _SavingsScreenState extends State<SavingsScreen> {
     );
   }
 
-  // Selecciona la cuenta actual en el provider
-  void _selectAccount(Account account, SavingsProvider prov) {
-    prov.selectAccount(account);
-  }
-
-  /// Diálogo para crear un objetivo
   Future<void> _showCreateObjectiveDialog(SavingsProvider prov) async {
     final _formKey = GlobalKey<FormState>();
     String title = "";
@@ -182,36 +171,22 @@ class _SavingsScreenState extends State<SavingsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Campo título
                 TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Título",
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Ingrese un título";
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => title = value!.trim(),
+                  decoration: const InputDecoration(labelText: "Título"),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? "Ingrese un título" : null,
+                  onSaved: (v) => title = v!.trim(),
                 ),
                 const SizedBox(height: 16),
-                // Campo importe
                 TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Importe",
-                  ),
+                  decoration: const InputDecoration(labelText: "Importe"),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Ingrese un importe";
-                    }
-                    if (double.tryParse(value) == null) {
-                      return "Importe inválido";
-                    }
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return "Ingrese un importe";
+                    if (double.tryParse(v) == null) return "Importe inválido";
                     return null;
                   },
-                  onSaved: (value) => amount = double.parse(value!),
+                  onSaved: (v) => amount = double.parse(v!),
                 ),
               ],
             ),
@@ -219,18 +194,16 @@ class _SavingsScreenState extends State<SavingsScreen> {
         ),
         actions: [
           TextButton(
-            child: const Text("Cancelar"),
-            onPressed: () => Navigator.pop(context),
-          ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar")),
           ElevatedButton(
-            child: const Text("Crear"),
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;
               _formKey.currentState!.save();
               await prov.createGoal(title: title, amount: amount);
-
               if (mounted) Navigator.pop(context);
             },
+            child: const Text("Crear"),
           ),
         ],
       ),
@@ -240,9 +213,9 @@ class _SavingsScreenState extends State<SavingsScreen> {
   Future<void> _showCreateLimitDialog(SavingsProvider prov) async {
     final _formKey = GlobalKey<FormState>();
     double amount = 0.0;
+    final subs = prov.subCategories;
 
-    final subCategories = prov.subCategories;
-    if (subCategories.isEmpty) {
+    if (subs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("No hay subcategorías disponibles")),
       );
@@ -252,33 +225,10 @@ class _SavingsScreenState extends State<SavingsScreen> {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        SubCategory? selectedSub = subCategories.first;
+      builder: (_) {
+        SubCategory? selectedSub = subs.first;
         return StatefulBuilder(
-          builder: (context, setState) {
-            int lastCategoryId = -1;
-            final List<Widget> subcategoryTiles = [];
-            for (final sub in subCategories) {
-              final isNewCategory = sub.categoryId != lastCategoryId;
-              final displayName = isNewCategory
-                  ? sub.name.toUpperCase()
-                  : sub.name.toLowerCase();
-              lastCategoryId = sub.categoryId;
-              subcategoryTiles.add(
-                RadioListTile<SubCategory>(
-                  value: sub,
-                  groupValue: selectedSub,
-                  title: Text(
-                    displayName,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  onChanged: (val) => setState(() => selectedSub = val),
-                  dense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-                ),
-              );
-            }
-
+          builder: (ctx, setState) {
             return AlertDialog(
               title: const Text("Crear Límite"),
               content: Form(
@@ -289,7 +239,15 @@ class _SavingsScreenState extends State<SavingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...subcategoryTiles,
+                        ...subs.map((sub) {
+                          return RadioListTile<SubCategory>(
+                            value: sub,
+                            groupValue: selectedSub,
+                            title: Text(sub.name),
+                            onChanged: (v) => setState(() => selectedSub = v),
+                            dense: true,
+                          );
+                        }).toList(),
                         const SizedBox(height: 16),
                         TextFormField(
                           decoration:
@@ -297,12 +255,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           validator: (v) {
-                            if (v == null || v.isEmpty) {
-                              return "Ingrese un importe";
-                            }
-                            if (double.tryParse(v) == null) {
-                              return "Importe inválido";
-                            }
+                            if (v == null || v.isEmpty) return "Ingrese un importe";
+                            if (double.tryParse(v) == null) return "Importe inválido";
                             return null;
                           },
                           onSaved: (v) => amount = double.parse(v!),
@@ -314,24 +268,18 @@ class _SavingsScreenState extends State<SavingsScreen> {
               ),
               actions: [
                 TextButton(
-                  child: const Text("Cancelar"),
-                  onPressed: () => Navigator.pop(context),
-                ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Cancelar")),
                 ElevatedButton(
-                  child: const Text("Crear"),
                   onPressed: () async {
-                    if (!_formKey.currentState!.validate()) return;
+                    if (!_formKey.currentState!.validate() ||
+                        selectedSub == null) return;
                     _formKey.currentState!.save();
-                    if (selectedSub == null) return;
-
-                    // Llamada al provider para crear el límite
                     await prov.createLimit(
-                      subcategoryId: selectedSub!.id,
-                      amount: amount,
-                    );
-
-                    if (mounted) Navigator.pop(context);
+                        subcategoryId: selectedSub!.id, amount: amount);
+                    if (mounted) Navigator.pop(ctx);
                   },
+                  child: const Text("Crear"),
                 ),
               ],
             );
@@ -341,146 +289,61 @@ class _SavingsScreenState extends State<SavingsScreen> {
     );
   }
 
+  Widget _buildObjectiveList(List<Objective> items) {
+    if (items.isEmpty) {
+      return const Center(child: Text('No hay Objetivos'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(8),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
+      itemBuilder: (ctx, i) {
+        final obj = items[i];
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundInApp,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(obj.title ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('${obj.amount.toStringAsFixed(2)} / ${obj.total.toStringAsFixed(2)} €'),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildLimitList(List<Objective> items) {
     if (items.isEmpty) {
       return const Center(child: Text('No hay Límites'));
     }
-    return Container(
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 3),
+    return ListView.separated(
+      padding: const EdgeInsets.all(8),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
+      itemBuilder: (ctx, i) {
+        final lim = items[i];
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundInApp,
+            borderRadius: BorderRadius.circular(6),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Cabecera
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.principal,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-            ),
-            child: const Center(
-              child: Text(
-                'Límites',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(lim.limit_name ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('${lim.total.toStringAsFixed(2)} €'),
+            ],
           ),
-
-          // Lista
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
-              itemBuilder: (context, index) {
-                final obj = items[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundInApp,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        obj.limit_name?? '-',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${obj.total.toStringAsFixed(2)} €',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
-
-  Widget _buildObjectiveList(List<Objective> items) {
-    if (items.isEmpty) {
-      return const Center(child: Text('No hay Objetivos'));
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.principal,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-            ),
-            child: const Center(
-              child: Text(
-                'Objetivos',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
-              itemBuilder: (context, index) {
-                final obj = items[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundInApp,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(obj.title ?? '-', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${obj.amount.toStringAsFixed(2)} / ${obj.total.toStringAsFixed(2)} €',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 }

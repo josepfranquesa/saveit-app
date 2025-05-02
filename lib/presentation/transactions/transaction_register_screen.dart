@@ -1,6 +1,10 @@
 import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/user.dart';
+import 'package:SaveIt/providers/account_list_provider.dart';
+import 'package:SaveIt/providers/auth_provider.dart';
+import 'package:SaveIt/providers/coins_provider.dart';
+import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/account.dart';
@@ -22,21 +26,22 @@ class TransactionRegisterScreen extends StatefulWidget {
 class _TransactionRegisterScreenState
     extends State<TransactionRegisterScreen> {
   Account? selectedAccount;
-  late Future<List<Account>> _accountsFuture;
 
   @override
   void initState() {
     super.initState();
-    final prov =
-        Provider.of<TransactionRegisterProvider>(context, listen: false);
-    // Carga las cuentas UNA VEZ y asigna la primera como selectedAccount
-    _accountsFuture = prov.getAccountsForUser(context);
-    _accountsFuture.then((accounts) {
-      if (accounts.isNotEmpty) {
-        setState(() {
-          selectedAccount = accounts.first;
-        });
-        prov.getTransactionsForAccount(selectedAccount!.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProv = context.read<AuthProvider>();
+      final accountProv = context.read<AccountListProvider>();
+      final txProv = context.read<TransactionRegisterProvider>();
+
+      // 1) Carga inicial de cuentas existentes
+      await accountProv.fetchAccounts(authProv.user!.id);
+
+      // 2) Si hay cuentas, selecciona la primera y carga sus transacciones
+      if (accountProv.accounts.isNotEmpty) {
+        setState(() => selectedAccount = accountProv.accounts.first);
+        await txProv.getTransactionsForAccount(selectedAccount!.id);
       }
     });
   }
@@ -46,7 +51,8 @@ class _TransactionRegisterScreenState
     setState(() {
       selectedAccount = account;
     });
-    Provider.of<TransactionRegisterProvider>(context, listen: false)
+    context
+        .read<TransactionRegisterProvider>()
         .getTransactionsForAccount(account.id);
   }
 
@@ -71,12 +77,12 @@ class _TransactionRegisterScreenState
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Actual: ${t.nameCategory ?? '— Ninguna —'}'),
+            Text('Actual: ${t.nameCategory ?? 'Ninguna'}'),
             const SizedBox(height: 16),
             DropdownButtonFormField<int?>(
               decoration: const InputDecoration(labelText: 'Nueva categoría'),
               items: [
-                const DropdownMenuItem(value: null, child: Text('— Ninguna —')),
+                const DropdownMenuItem(value: null, child: Text('Ninguna')),
                 ...prov.subCategories
                     .where((s) => s.categoryType == (t.amount >= 0 ? 'Ingreso' : 'Despesa'))
                     .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
@@ -209,7 +215,7 @@ class _TransactionRegisterScreenState
                         style: Theme.of(context).textTheme.bodyMedium,
                         items: [
                           const DropdownMenuItem<int>(
-                              value: null, child: Text('— Ninguna —')),
+                              value: null, child: Text('Ninguna')),
                           ...filteredSubs.map(
                             (sub) => DropdownMenuItem<int>(
                               value: sub.id,
@@ -232,7 +238,7 @@ class _TransactionRegisterScreenState
                         style: Theme.of(context).textTheme.bodyMedium,
                         items: [
                           const DropdownMenuItem<int>(
-                              value: null, child: Text('— Ninguno —')),
+                              value: null, child: Text('Ninguno')),
                           ...objectives.map(
                             (obj) => DropdownMenuItem<int>(
                               value: obj.id,
@@ -392,8 +398,8 @@ class _TransactionRegisterScreenState
               ),
               TextField(
                 controller: balCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Balance Inicial (€)'),
+                decoration:
+                    const InputDecoration(labelText: 'Balance Inicial (€)'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
@@ -401,23 +407,22 @@ class _TransactionRegisterScreenState
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar')),
             TextButton(
               onPressed: () {
                 final title = titleCtrl.text.trim();
                 final bal = double.tryParse(balCtrl.text.trim());
                 if (title.isNotEmpty && bal != null) {
-                  Provider.of<TransactionRegisterProvider>(context,
-                          listen: false)
+                  context
+                      .read<TransactionRegisterProvider>()
                       .createAccount(context, title, bal);
                   Navigator.of(context).pop();
-                  AppUtils.toast(context,
-                      title: 'Cuenta creada', type: 'success');
+                  AppUtils.toast(
+                      context, title: 'Cuenta creada', type: 'success');
                 } else {
-                  AppUtils.toast(context,
-                      title: 'Datos inválidos', type: 'error');
+                  AppUtils.toast(
+                      context, title: 'Datos inválidos', type: 'error');
                 }
               },
               child: const Text('Crear'),
@@ -428,9 +433,12 @@ class _TransactionRegisterScreenState
     );
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
-    final String balanceText = selectedAccount?.balance != null
+    final accountProv = context.watch<AccountListProvider>();
+    final txProv = context.watch<TransactionRegisterProvider>();
+
+    final balanceText = selectedAccount != null
         ? '${selectedAccount!.balance.toStringAsFixed(2)}€'
         : '';
 
@@ -442,224 +450,169 @@ class _TransactionRegisterScreenState
           // 1) Selección de cuenta
           Padding(
             padding: const EdgeInsets.all(10),
-            child: FutureBuilder<List<Account>>(
-              future: _accountsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return const Text(
-                      'Error al cargar las cuentas');
-                }
-                final accounts = snapshot.data ?? [];
-                if (accounts.isEmpty) {
-                  return Row(
-                    children: [
-                      const Text('No hay cuentas disponibles'),
-                      IconButton(
-                        icon: const Icon(
-                            Icons.add_circle_outline,
-                            size: 30,
-                            color: Colors.blue),
-                        onPressed: () =>
-                            _showAddAccountOptions(context),
-                      ),
-                    ],
-                  );
-                }
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ...accounts.map(_accountContainer),
-                      IconButton(
-                        icon: const Icon(
-                            Icons.add_circle_outline,
-                            size: 30,
-                            color: Colors.blue),
-                        onPressed: () =>
-                            _showAddAccountOptions(context),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // 2) Información de la cuenta seleccionada
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.softGreen,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Stack(
-                children: [
-                  Row(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+            child: accountProv.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : accountProv.accounts.isEmpty
+                    ? Row(
+                        children: [
+                          const Text('No hay cuentas disponibles'),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline,
+                                size: 30, color: Colors.blue),
+                            onPressed: () => _showAddAccountOptions(context),
+                          ),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
                           children: [
-                            Text(
-                              selectedAccount?.title ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              balanceText,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green.shade700,
-                              ),
+                            ...accountProv.accounts.map(_accountContainer),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline,
+                                  size: 30, color: Colors.blue),
+                              onPressed: () => _showAddAccountOptions(context),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      FutureBuilder<List<User>>(
-                        future:
-                            Provider.of<TransactionRegisterProvider>(
-                                    context,
-                                    listen: false)
-                                .getUsersForAccount(
-                                    selectedAccount!.id),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2),
-                            );
-                          } else if (snapshot.hasError) {
-                            return const Text(
-                              'Error',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.red),
-                            );
-                          }
-                          final users = snapshot.data ?? [];
-                          if (users.isEmpty) {
-                            return const Text(
-                              '—',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontStyle:
-                                      FontStyle.italic),
-                            );
-                          }
-                          return Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: users
-                                .map((u) => Text(
-                                      u.name,
-                                      style: const TextStyle(
-                                          fontSize: 12),
+          ),
+
+          // 2) Información de la cuenta seleccionada
+          if (selectedAccount != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.softGreen,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                selectedAccount!.title,
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                balanceText,
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FutureBuilder<List<User>>(
+                          future: context
+                              .read<TransactionRegisterProvider>()
+                              .getUsersForAccount(selectedAccount!.id),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2));
+                            } else if (snapshot.hasError) {
+                              return const Text('Error',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.red));
+                            }
+                            final users = snapshot.data ?? [];
+                            if (users.isEmpty) {
+                              return const Text('—',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic));
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: users
+                                  .map((u) => Text(u.name,
+                                      style: const TextStyle(fontSize: 12),
                                       maxLines: 1,
-                                      overflow:
-                                          TextOverflow.ellipsis,
-                                    ))
-                                .toList(),
+                                      overflow: TextOverflow.ellipsis))
+                                  .toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    Positioned(
+                      top: 26,
+                      right: 220,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        iconSize: 16,
+                        icon: const Icon(Icons.info_outline),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'ID de la cuenta: ${selectedAccount!.id}'),
+                              duration: const Duration(seconds: 2),
+                            ),
                           );
                         },
                       ),
-                    ],
-                  ),
-                  Positioned(
-                    top: 26,
-                    right: 220,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(),
-                      iconSize: 16,
-                      icon: const Icon(
-                          Icons.info_outline),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'ID de la cuenta: ${selectedAccount?.id}'),
-                            duration: const Duration(
-                                seconds: 2),
-                          ),
-                        );
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
           const SizedBox(height: 10),
 
           // 3) Listado de transacciones
           Expanded(
-            child: Consumer<TransactionRegisterProvider>(
-              builder: (context, prov, child) {
-                if (prov.isLoading) {
-                  return const Center(
-                      child:
-                          CircularProgressIndicator());
-                } else if (prov.transactions.isEmpty) {
-                  return const Center(
-                    child: Text(
-                        'No hay transacciones registradas.'),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: prov.transactions.length,
-                  itemBuilder: (context, i) =>
-                      _transactionItem(
-                          prov.transactions[i], i),
-                );
-              },
-            ),
+            child: txProv.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : txProv.transactions.isEmpty
+                    ? const Center(
+                        child: Text('No hay transacciones registradas.'),
+                      )
+                    : ListView.builder(
+                        itemCount: txProv.transactions.length,
+                        itemBuilder: (context, i) =>
+                            _transactionItem(txProv.transactions[i], i),
+                      ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateRegisterDialog(
-            context),
+        onPressed: () => _showCreateRegisterDialog(context),
         child: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
   Widget _accountContainer(Account account) {
+    final isSelected = selectedAccount?.id == account.id;
     return GestureDetector(
       onTap: () => _selectAccount(account),
       child: Container(
         width: 150,
-        margin:
-            const EdgeInsets.symmetric(horizontal: 5),
+        margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: selectedAccount?.id == account.id
-              ? AppColors.normalBlue
-              : AppColors.softBlue,
+          color: isSelected ? AppColors.normalBlue : AppColors.softBlue,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -667,13 +620,11 @@ class _TransactionRegisterScreenState
           children: [
             Text(account.title,
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14)),
+                    fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 5),
             Text('${account.balance.toStringAsFixed(2)}€',
                 style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold)),
+                    fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -681,60 +632,45 @@ class _TransactionRegisterScreenState
   }
 
   Widget _transactionItem(Transaction transaction, int index) {
-    final dateStr = DateFormat('HH:mm dd/MM/yyyy')
-        .format(transaction.createdAt);
+    final dateStr =
+        DateFormat('HH:mm dd/MM/yyyy').format(transaction.createdAt);
     return Card(
-      margin: const EdgeInsets.symmetric(
-          horizontal: 10, vertical: 5),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: ListTile(
         leading: Icon(
           transaction.amount >= 0
               ? Icons.arrow_circle_up
               : Icons.arrow_circle_down,
-          color: transaction.amount >= 0
-              ? AppColors.green
-              : AppColors.red,
+          color:
+              transaction.amount >= 0 ? AppColors.green : AppColors.red,
           size: 24,
         ),
-        title: Text(
-          transaction.origin,
-          style: const TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w500),
-        ),
+        title: Text(transaction.origin,
+            style:
+                const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         subtitle: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              transaction.nameCategory ??
-                  'No hay categoría asignada',
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.grey),
-            ),
+            Text(transaction.nameCategory ??
+                'No hay categoría asignada'),
             const SizedBox(height: 4),
             Text(dateStr,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.grey)),
+                style: const TextStyle(fontSize: 12, color: AppColors.grey)),
           ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '€${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: transaction.amount >= 0
-                      ? AppColors.green
-                      : AppColors.red),
-            ),
+            Text('€${transaction.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: transaction.amount >= 0
+                        ? AppColors.green
+                        : AppColors.red)),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
-                  case 'edit':
-                    _showEditRegisterDialog(context, transaction);
-                    break;
                   case 'category':
                     _showAssignCategoryDialog(context, transaction);
                     break;
@@ -745,8 +681,8 @@ class _TransactionRegisterScreenState
               },
               icon: const Icon(Icons.more_vert, size: 20),
               itemBuilder: (_) => const [
-                PopupMenuItem(value: 'edit', child: Text('Editar')),
-                PopupMenuItem(value: 'category', child: Text('Asignar categoría')),
+                PopupMenuItem(
+                    value: 'category', child: Text('Asignar categoría')),
                 PopupMenuItem(value: 'delete', child: Text('Eliminar')),
               ],
             ),
