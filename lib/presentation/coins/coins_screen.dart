@@ -205,15 +205,46 @@ class _CoinsScreenState extends State<CoinsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: ExpansionTile(
-        title: Text(category.name,
-            style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold, color: titleColor)),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        trailing: Transform.scale(
+          scale: 0.7,
+          child: Icon(Icons.expand_more, color: titleColor),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                category.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: titleColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              category.amountMonth.toStringAsFixed(2),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: titleColor,
+              ),
+            ),
+          ],
+        ),
         onExpansionChanged: (expanded) {
           if (expanded &&
               subs.isEmpty &&
               coinsProv.selectedAccount != null) {
             coinsProv.getSubcategoriesForCategory(
-                category.id, coinsProv.selectedAccount!.id);
+              category.id,
+              coinsProv.selectedAccount!.id,
+            );
           }
         },
         children: [
@@ -221,15 +252,41 @@ class _CoinsScreenState extends State<CoinsScreen> {
             const Center(child: CircularProgressIndicator()),
           if (subs.isNotEmpty)
             ...subs.map((s) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Text(s.name,
-                      style: const TextStyle(fontSize: 14, color: AppColors.black)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          s.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.black,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        s.amountMonth.toStringAsFixed(2),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.black,
+                        ),
+                      ),
+                    ],
+                  ),
                 )),
           if (!coinsProv.isLoadingSubcategories && subs.isEmpty)
             const Padding(
               padding: EdgeInsets.all(8.0),
-              child: Text("No hay subcategorías para esta categoría."),
+              child: Text(
+                "No hay subcategorías para esta categoría.",
+                style: TextStyle(fontSize: 13, color: AppColors.black),
+              ),
             ),
         ],
       ),

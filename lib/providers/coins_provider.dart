@@ -103,18 +103,18 @@ class CoinsProvider extends ChangeNotifier {
 
   /// Obtiene subcategorías para una categoría dada y la cuenta seleccionada
   Future<void> getSubcategoriesForCategory(int categoryId, int accountId) async {
-  isLoadingSubcategories = true;
-  notifyListeners();
-  try {
-    final subCats = await _api.getSubcategoriesForCategory(categoryId, accountId);
-    subcategoriesMap[categoryId] = subCats;
-  } catch (e) {
-    debugPrint("Error al obtener subcategorías: $e");
-  } finally {
-    isLoadingSubcategories = false;
+    isLoadingSubcategories = true;
     notifyListeners();
+    try {
+      final subCats = await _api.getSubcategoriesForCategory(categoryId, accountId);
+      subcategoriesMap[categoryId] = subCats;
+    } catch (e) {
+      debugPrint("Error al obtener subcategorías: $e");
+    } finally {
+      isLoadingSubcategories = false;
+      notifyListeners();
+    }
   }
-}
 
   /// Crea una nueva categoría para la cuenta seleccionada
   Future<void> createCategory(String name, String type) async {

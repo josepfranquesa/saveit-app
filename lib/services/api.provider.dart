@@ -175,23 +175,26 @@ class ApiProvider extends ChangeNotifier {
   Future<List<Category>> getCategoriesForAccount(int accountId) async {
     final response = await dio.get('/category/account/$accountId');
     if (response.statusCode == 200) {
-      // Dio ya decodifica la respuesta JSON automáticamente,
-      // por lo tanto, usamos response.data en lugar de response.body.
-      final data = response.data;
-      return (data as List).map((e) => Category.fromJson(e)).toList();
+      final rawList = response.data as List<dynamic>;
+      return rawList
+        .map((e) => Category.fromJson(e as Map<String, dynamic>))
+        .toList();
     } else {
       throw Exception('Error al obtener categorías');
     }
   }
 
- Future<List<SubCategory>> getSubcategoriesForCategory(int categoryId, int accountId) async {
+  Future<List<SubCategory>> getSubcategoriesForCategory(int categoryId, int accountId) async {
     final response = await dio.get('/subcategory/category/$categoryId/$accountId');
-    
-    // Se espera que response.data sea una lista de mapas
-    final List<dynamic> data = response.data;
-    
-    // Convertir cada objeto JSON en una instancia de SubCategory
-    return data.map((json) => SubCategory.fromJson(json as Map<String, dynamic>)).toList();
+
+    if (response.statusCode == 200) {
+      final rawList = response.data as List<dynamic>;
+      return rawList
+          .map((e) => SubCategory.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Error al obtener subcategorías');
+    }
   }
 
   Future<void> createCategory({required int accountId,required String name,required String type,}) async {
