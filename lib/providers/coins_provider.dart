@@ -140,4 +140,14 @@ class CoinsProvider extends ChangeNotifier {
       debugPrint("Error al crear subcategoría: $e");
     }
   }
+
+  Future<void> deleteCatSubcatAccount({int? id_category, int? id_subcat,   required int accountId,}) async {
+    if (id_category != null) {
+      await _api.deleteCategoryAccount(id_category, accountId);
+    } else if (id_subcat != null) {
+      await _api.deleteSubcategoryAccount(id_subcat, accountId);
+    }
+    selectAccount(selectedAccount!);
+
+  }
 }

@@ -223,6 +223,20 @@ class ApiProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteCategoryAccount(int id, int accountId) async {
+      final response = await dio.delete('/category/account/$id/$accountId');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Error al eliminar categoría');
+      }
+  }
+
+  Future<void> deleteSubcategoryAccount(int id, int accountId) async {
+      final response = await dio.delete('/subcategory/account/$id/$accountId');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Error al eliminar subcategoría');
+      }
+  }
+
   /* **********************************************
    *              OBJETIVOS Y LÍMITES
    *********************************************** */

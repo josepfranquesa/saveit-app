@@ -33,17 +33,32 @@ class _CoinsScreenState extends State<CoinsScreen> {
   @override
   Widget build(BuildContext context) {
     final accountProv = context.watch<AccountListProvider>();
-    final coinsProv = context.watch<CoinsProvider>();
+    final coinsProv   = context.watch<CoinsProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text('Categorías')),
+
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.red,
+        foregroundColor: Colors.white,
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+        ),
+        onPressed: () => _showDeleteOptions(coinsProv),
+      ),
+
       body: Column(
         children: [
-          // 1) Fila horizontal de cuentas, ahora desde AccountListProvider
+          // 1) Fila horizontal de cuentas
           Padding(
             padding: const EdgeInsets.all(10),
-            child: _buildAccountsRow(accountProv.accounts, coinsProv, accountProv.isLoading),
+            child: _buildAccountsRow(
+              accountProv.accounts,
+              coinsProv,
+              accountProv.isLoading,
+            ),
           ),
 
           // 2) Botones para crear Categoría y Subcategoría
@@ -389,6 +404,151 @@ class _CoinsScreenState extends State<CoinsScreen> {
               }
             },
             child: const Text("Crear"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteOptions(CoinsProvider coinsProv) {
+    if (coinsProv.selectedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona primero una cuenta')),
+      );
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: _buildDeleteOptionsList(coinsProv),
+      ),
+    );
+  }
+
+  Widget _buildDeleteOptionsList(CoinsProvider coinsProv) {
+    final cats = coinsProv.categories;
+    final despesaCats =
+        cats.where((c) => c.type.toLowerCase() == 'despesa').toList();
+    final ingresoCats =
+        cats.where((c) => c.type.toLowerCase() == 'ingreso').toList();
+    final subsMap = coinsProv.subcategoriesMap;
+
+    Widget buildColumn(
+        List<Category> list, Color tileColor, Color titleColor) {
+      return Expanded(
+        child: ListView(
+          children: [
+            for (var cat in list) ...[
+              Container(
+                color: tileColor,
+                child: ExpansionTile(
+                  title: Text(
+                    cat.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
+                    ),
+                  ),
+                  onExpansionChanged: (expanded) {
+                    if (expanded && (subsMap[cat.id]?.isEmpty ?? true)) {
+                      final acc = coinsProv.selectedAccount;
+                      if (acc != null) {
+                        coinsProv.getSubcategoriesForCategory(cat.id, acc.id);
+                      }
+                    }
+                  },
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete, color: titleColor),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _confirmDelete(
+                        title:
+                            '¿Seguro que quieres eliminar la categoría "${cat.name}"?',
+                        onConfirm: () =>
+                            coinsProv.deleteCatSubcatAccount(id_category: cat.id, accountId: coinsProv.selectedAccount!.id),
+                      );
+                    },
+                  ),
+                  children: [
+                    if (coinsProv.isLoadingSubcategories &&
+                        (subsMap[cat.id]?.isEmpty ?? true))
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    for (var sub in subsMap[cat.id] ?? []) 
+                      Padding(
+                        padding: const EdgeInsets.only(left: 32.0, right: 16.0, top: 4.0, bottom: 4.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                sub.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: titleColor,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete, color: titleColor),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                _confirmDelete(
+                                  title:
+                                      '¿Seguro que quieres eliminar la subcategoría "${sub.name}"?',
+                                  onConfirm: () => coinsProv.deleteCatSubcatAccount(id_subcat: sub.id, accountId: coinsProv.selectedAccount!.id),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    const Divider(indent: 32),
+                  ],
+                ),
+              ),
+              const Divider(),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        buildColumn(despesaCats, AppColors.softRed, AppColors.red),
+        const VerticalDivider(width: 1, thickness: 1),
+        buildColumn(ingresoCats, AppColors.softGreen, AppColors.green),
+      ],
+    );
+  }
+
+
+
+  void _confirmDelete({
+    required String title,
+    required VoidCallback onConfirm,
+  }) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text(title),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.of(context).pop();
+              onConfirm(); 
+            },
+            child: const Text('Sí, eliminar'),
           ),
         ],
       ),
