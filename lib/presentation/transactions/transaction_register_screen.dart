@@ -434,9 +434,9 @@ class _TransactionRegisterScreenState
   }
 
     @override
-  Widget build(BuildContext context) {
+    Widget build(BuildContext context) {
     final accountProv = context.watch<AccountListProvider>();
-    final txProv = context.watch<TransactionRegisterProvider>();
+    final txProv      = context.watch<TransactionRegisterProvider>();
 
     final balanceText = selectedAccount != null
         ? '${selectedAccount!.balance.toStringAsFixed(2)}€'
@@ -445,6 +445,7 @@ class _TransactionRegisterScreenState
     return Scaffold(
       backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text('Registrar Movimiento')),
+
       body: Column(
         children: [
           // 1) Selección de cuenta
@@ -595,7 +596,9 @@ class _TransactionRegisterScreenState
           ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab-registro-movimiento',  // ← tag único
         onPressed: () => _showCreateRegisterDialog(context),
         child: const Icon(Icons.add),
       ),

@@ -223,6 +223,10 @@ class ApiProvider extends ChangeNotifier {
     }
   }
 
+  Future<Response> fetchNoCategoryTotals(int accountId) async {
+    return await dio.get('/register/total/no_category/$accountId');
+  }
+
   Future<void> deleteCategoryAccount(int id, int accountId) async {
       final response = await dio.delete('/category/account/$id/$accountId');
       if (response.statusCode != 200 && response.statusCode != 201) {

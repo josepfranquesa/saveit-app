@@ -40,12 +40,10 @@ class _CoinsScreenState extends State<CoinsScreen> {
       appBar: AppBar(title: const Text('Categorías')),
 
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab-eliminar-registro',
         backgroundColor: AppColors.red,
         foregroundColor: Colors.white,
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.delete),
         onPressed: () => _showDeleteOptions(coinsProv),
       ),
 
@@ -96,6 +94,13 @@ class _CoinsScreenState extends State<CoinsScreen> {
           // 3) Lista de Categorías y Subcategorías
           Expanded(
             child: _buildCategoriesAndSubcategories(coinsProv, context),
+          ),
+
+          const SizedBox(height: 10),
+
+          // 4) Total de los registros sin categoría
+          Expanded(
+            child: _buildNoCategory(coinsProv, context),
           ),
         ],
       ),
@@ -148,6 +153,59 @@ class _CoinsScreenState extends State<CoinsScreen> {
                     fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoCategory(CoinsProvider coinsProv, BuildContext context) {
+    return SingleChildScrollView(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Despesa sin subcategoría
+          Expanded(
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    "Sin categorias asociadas",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                Text(
+                  coinsProv.despesaNoCat.toStringAsFixed(2),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Ingreso sin subcategoría
+          Expanded(
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    "Sin categorias asociadas",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                Text(
+                  coinsProv.ingresoNoCat.toStringAsFixed(2),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

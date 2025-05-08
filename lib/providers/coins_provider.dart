@@ -25,6 +25,8 @@ class CoinsProvider extends ChangeNotifier {
 
   List<Category> categories = [];
   Map<int, List<SubCategory>> subcategoriesMap = {};
+  double despesaNoCat = 0;
+  double ingresoNoCat = 0;
 
   bool isLoadingCategories = false;
   bool isLoadingSubcategories = false;
@@ -113,6 +115,18 @@ class CoinsProvider extends ChangeNotifier {
     } finally {
       isLoadingSubcategories = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> fetchNoCategoryTotals(int accountId) async {
+    try {
+      final Response resp = await _api.fetchNoCategoryTotals(accountId);
+      despesaNoCat = (resp.data['despesaNoCategory'] as num).toDouble();
+      ingresoNoCat = (resp.data['ingresoNoCategory'] as num).toDouble();
+      notifyListeners();
+    } catch (e) {
+      despesaNoCat = 0.0;
+      ingresoNoCat = 0.0;
     }
   }
 
