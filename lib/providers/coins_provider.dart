@@ -25,8 +25,13 @@ class CoinsProvider extends ChangeNotifier {
 
   List<Category> categories = [];
   Map<int, List<SubCategory>> subcategoriesMap = {};
-  double despesaNoCat = 0;
-  double ingresoNoCat = 0;
+
+  Map<int,bool> _loadingSubcats = {};
+  bool isLoadingSubcat(int catId) => _loadingSubcats[catId] ?? false;
+
+
+  double despesaNoCat = 0.0;
+  double ingresoNoCat = 0.0;
 
   bool isLoadingCategories = false;
   bool isLoadingSubcategories = false;
@@ -86,6 +91,7 @@ class CoinsProvider extends ChangeNotifier {
     categories.clear();
     subcategoriesMap.clear();
     await getCategoriesForAccount(account.id);
+    await fetchNoCategoryTotals(account.id);
     notifyListeners();
   }
 
@@ -105,15 +111,13 @@ class CoinsProvider extends ChangeNotifier {
 
   /// Obtiene subcategorías para una categoría dada y la cuenta seleccionada
   Future<void> getSubcategoriesForCategory(int categoryId, int accountId) async {
-    isLoadingSubcategories = true;
+    _loadingSubcats[categoryId] = true;
     notifyListeners();
     try {
       final subCats = await _api.getSubcategoriesForCategory(categoryId, accountId);
       subcategoriesMap[categoryId] = subCats;
-    } catch (e) {
-      debugPrint("Error al obtener subcategorías: $e");
     } finally {
-      isLoadingSubcategories = false;
+      _loadingSubcats[categoryId] = false;
       notifyListeners();
     }
   }

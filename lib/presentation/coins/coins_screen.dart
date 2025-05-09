@@ -38,74 +38,90 @@ class _CoinsScreenState extends State<CoinsScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text('Categorías')),
-
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab-eliminar-registro',
-        backgroundColor: AppColors.red,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.delete),
-        onPressed: () => _showDeleteOptions(coinsProv),
-      ),
-
-      body: Column(
+      body: Stack(
         children: [
-          // 1) Fila horizontal de cuentas
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: _buildAccountsRow(
-              accountProv.accounts,
-              coinsProv,
-              accountProv.isLoading,
-            ),
-          ),
-
-          // 2) Botones para crear Categoría y Subcategoría
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.principal,
-                      foregroundColor: AppColors.white,
-                    ),
-                    onPressed: () => _showCreateCategoryDialog(coinsProv),
-                    child: const Text("+ categoría"),
-                  ),
+          // 1) Toda la UI “de fondo” (sin el botón)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Fila de cuentas
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: _buildAccountsRow(
+                  accountProv.accounts,
+                  coinsProv,
+                  accountProv.isLoading,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.principal,
-                      foregroundColor: AppColors.white,
+              ),
+
+              // Botones crear categoría / subcategoría
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.principal,
+                          foregroundColor: AppColors.white,
+                        ),
+                        onPressed: () => _showCreateCategoryDialog(coinsProv),
+                        child: const Text("+ categoría"),
+                      ),
                     ),
-                    onPressed: () => _showCreateSubCategoryDialog(coinsProv),
-                    child: const Text("+ subcategoría"),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.principal,
+                          foregroundColor: AppColors.white,
+                        ),
+                        onPressed: () => _showCreateSubCategoryDialog(coinsProv),
+                        child: const Text("+ subcategoría"),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Lista de categorías (hace scroll en su espacio)
+              Expanded(
+                child: _buildCategoriesAndSubcategories(coinsProv, context),
+              ),
+
+              // Totales al fondo de la columna
+              _buildNoCategory(coinsProv, context),
+
+              const SizedBox(height: 16),
+            ],
+          ),
+
+          // 2) El botón, “flotando” por encima de todo
+          Positioned(
+            // Ajusta este valor para subir/bajar el botón
+            bottom: 80,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: FloatingActionButton(
+                heroTag: 'fab-eliminar-registro',
+                backgroundColor: AppColors.red,
+                foregroundColor: Colors.white,
+                child: const Icon(Icons.delete),
+                onPressed: () => _showDeleteOptions(coinsProv),
+              ),
             ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // 3) Lista de Categorías y Subcategorías
-          Expanded(
-            child: _buildCategoriesAndSubcategories(coinsProv, context),
-          ),
-
-          const SizedBox(height: 10),
-
-          // 4) Total de los registros sin categoría
-          Expanded(
-            child: _buildNoCategory(coinsProv, context),
           ),
         ],
       ),
     );
   }
+
+
+
+
 
   Widget _buildAccountsRow(List<Account> accounts, CoinsProvider coinsProv, bool isLoading) {
     if (isLoading) {
@@ -158,57 +174,88 @@ class _CoinsScreenState extends State<CoinsScreen> {
   }
 
   Widget _buildNoCategory(CoinsProvider coinsProv, BuildContext context) {
-    return SingleChildScrollView(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Despesa sin subcategoría
           Expanded(
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "Sin categorias asociadas",
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.softRed,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey, width: 1),  // ← borde negro
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  const Text(
+                    "Sin categorías asociadas",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.red,
+                    ),
                   ),
-                ),
-                Text(
-                  coinsProv.despesaNoCat.toStringAsFixed(2),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    "${coinsProv.despesaNoCat.toStringAsFixed(2)}€",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.red,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+
           const SizedBox(width: 10),
+
           // Ingreso sin subcategoría
           Expanded(
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    "Sin categorias asociadas",
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.softGreen,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey, width: 1),  // ← borde negro
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  const Text(
+                    "Sin categorías asociadas",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.green,
+                    ),
                   ),
-                ),
-                Text(
-                  coinsProv.ingresoNoCat.toStringAsFixed(2),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    "${coinsProv.ingresoNoCat.toStringAsFixed(2)}€",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.green,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+
 
   Widget _buildCategoriesAndSubcategories(CoinsProvider coinsProv, BuildContext context) {
     final despesas = coinsProv.categories
@@ -265,10 +312,11 @@ class _CoinsScreenState extends State<CoinsScreen> {
   }
 
   Widget _categoryTile(Category category, CoinsProvider coinsProv) {
-    final subs = coinsProv.subcategoriesMap[category.id] ?? [];
-    final isIngreso = category.type.toLowerCase() == 'ingreso';
-    final tileColor = isIngreso ? AppColors.softGreen : AppColors.softRed;
-    final titleColor = isIngreso ? AppColors.green : AppColors.red;
+    final subs    = coinsProv.subcategoriesMap[category.id] ?? [];
+    final loading = coinsProv.isLoadingSubcat(category.id);
+    final isIngreso   = category.type.toLowerCase() == 'ingreso';
+    final tileColor   = isIngreso ? AppColors.softGreen : AppColors.softRed;
+    final titleColor  = isIngreso ? AppColors.green     : AppColors.red;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -311,9 +359,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
           ],
         ),
         onExpansionChanged: (expanded) {
-          if (expanded &&
-              subs.isEmpty &&
-              coinsProv.selectedAccount != null) {
+          if (expanded && subs.isEmpty && coinsProv.selectedAccount != null) {
             coinsProv.getSubcategoriesForCategory(
               category.id,
               coinsProv.selectedAccount!.id,
@@ -321,41 +367,43 @@ class _CoinsScreenState extends State<CoinsScreen> {
           }
         },
         children: [
-          if (coinsProv.isLoadingSubcategories && subs.isEmpty)
-            const Center(child: CircularProgressIndicator()),
-          if (subs.isNotEmpty)
-            ...subs.map((s) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          s.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.black,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        s.amountMonth.toStringAsFixed(2),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (subs.isNotEmpty) ...subs.map((s) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        s.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w500,
                           color: AppColors.black,
                         ),
                       ),
-                    ],
-                  ),
-                )),
-          if (!coinsProv.isLoadingSubcategories && subs.isEmpty)
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      s.amountMonth.toStringAsFixed(2),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          else
             const Padding(
-              padding: EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8),
               child: Text(
                 "No hay subcategorías para esta categoría.",
                 style: TextStyle(fontSize: 13, color: AppColors.black),

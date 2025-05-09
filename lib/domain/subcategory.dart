@@ -4,7 +4,7 @@ class SubCategory {
   final String name;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final String categoryType;
+  final String? categoryType;
   final double amountMonth;
 
   SubCategory({
@@ -25,7 +25,7 @@ class SubCategory {
       name: json['name'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      categoryType: (json['category_type'] as String?) ?? '',
+      categoryType: json['category_type'] as String?,
       amountMonth: rawAmount != null
           ? (rawAmount as num).toDouble()
           : 0.0,

@@ -96,7 +96,7 @@ class SavingsProvider extends ChangeNotifier {
     try {
       final allSubs = await _api.fetchSubCategories(accountId);
       subCategories = allSubs
-          .where((s) => s.categoryType.toLowerCase() == 'despesa')
+          .where((s) => s.categoryType?.toLowerCase() == 'despesa')
           .toList();
     } catch (e) {
       debugPrint('Error fetching subcategories: $e');
