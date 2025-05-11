@@ -1,3 +1,4 @@
+import 'package:SaveIt/providers/transaction_register_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/subcategory.dart';
@@ -166,6 +167,5 @@ class CoinsProvider extends ChangeNotifier {
       await _api.deleteSubcategoryAccount(id_subcat, accountId);
     }
     selectAccount(selectedAccount!);
-
   }
 }

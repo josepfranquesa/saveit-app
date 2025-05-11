@@ -65,7 +65,7 @@ class SavingsProvider extends ChangeNotifier {
 
       if (_accounts.isNotEmpty) {
         _selectedAccount = _accounts.first;
-        await _loadObjectivesAndLimits(_selectedAccount!.id);
+        await loadObjectivesAndLimits(_selectedAccount!.id);
       }
       return _accounts;
     } on DioException catch (e) {
@@ -85,8 +85,10 @@ class SavingsProvider extends ChangeNotifier {
   Future<void> selectAccount(Account account) async {
     _selectedAccount = account;
     subCategories.clear();
+    goals.clear();
+    limits.clear();
     await _loadSubCategories(account.id);
-    await _loadObjectivesAndLimits(account.id);
+    await loadObjectivesAndLimits(account.id);
     notifyListeners();
   }
 
@@ -107,12 +109,11 @@ class SavingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadObjectivesAndLimits(int accountId) async {
+  Future<void> loadObjectivesAndLimits(int accountId) async {
     isLoadingObjectives = true;
     notifyListeners();
 
     try {
-      // Ya devuelve List<Objective>
       goals = await _api.fetchGoals(accountId);
     } catch (e) {
       debugPrint('Error fetching goals: $e');
@@ -120,7 +121,6 @@ class SavingsProvider extends ChangeNotifier {
     }
 
     try {
-      // Igual para los límites
       limits = await _api.fetchLimits(accountId);
     } catch (e) {
       debugPrint('Error fetching limits: $e');
@@ -142,7 +142,7 @@ class SavingsProvider extends ChangeNotifier {
         title: title,
         total: amount,
       );
-      await _loadObjectivesAndLimits(_selectedAccount!.id);
+      await loadObjectivesAndLimits(_selectedAccount!.id);
     } catch (e) {
       debugPrint('Error creating goal: $e');
     } finally {
@@ -163,7 +163,7 @@ class SavingsProvider extends ChangeNotifier {
         total: amount,
         subcategoryId: subcategoryId,
       );
-      await _loadObjectivesAndLimits(_selectedAccount!.id);
+      await loadObjectivesAndLimits(_selectedAccount!.id);
     } catch (e) {
       debugPrint('Error creating limit: $e');
     } finally {
@@ -171,4 +171,21 @@ class SavingsProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteObjective(int objectiveId) async {
+    isLoadingObjectives = true;
+    notifyListeners();
+
+    try {
+      await _api.deleteObjective(objectiveId);
+      await loadObjectivesAndLimits(_selectedAccount!.id);
+    } catch (e) {
+      debugPrint('Error al eliminar objetivo: $e');
+      rethrow;
+    } finally {
+      isLoadingObjectives = false;
+      notifyListeners();
+    }
+  }
+
 }

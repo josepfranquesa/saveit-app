@@ -8,6 +8,7 @@ import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class SavingsScreen extends StatefulWidget {
@@ -290,33 +291,129 @@ class _SavingsScreenState extends State<SavingsScreen> {
   }
 
   Widget _buildObjectiveList(List<Objective> items) {
-    if (items.isEmpty) {
-      return const Center(child: Text('No hay Objetivos'));
+    // formateador con siempre 2 decimales
+    final twoDecFormatter = NumberFormat('#,##0.00', 'es_ES');
+    String _smartFormat(double value) {
+      final s = twoDecFormatter.format(value);
+      return s.endsWith(',00') ? s.substring(0, s.length - 3) : s;
     }
+
+    if (items.isEmpty) return const Center(child: Text('No hay Objetivos'));
+
     return ListView.separated(
       padding: const EdgeInsets.all(8),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 6),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (ctx, i) {
-        final obj = items[i];
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundInApp,
-            borderRadius: BorderRadius.circular(6),
+        final obj       = items[i];
+        final amountStr = _smartFormat(obj.amount);
+        final totalStr  = _smartFormat(obj.total);
+        final progress  = (obj.amount / obj.total).clamp(0.0, 1.0);
+        final percent   = (progress * 100).toStringAsFixed(0);
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(obj.title ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('${obj.amount.toStringAsFixed(2)} / ${obj.total.toStringAsFixed(2)} €'),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título del objetivo con check si está completado
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        obj.title ?? '-',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, size: 18),
+                        color: AppColors.success,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          showDialog(
+                            context: ctx,
+                            builder: (dialogCtx) => AlertDialog(
+                              title: const Text('Confirmar'),
+                              content: const Text(
+                                '¿Seguro que quieres marcar este objetivo como completado? Se va a eliminar.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.softGreen,
+                                  ),
+                                  onPressed: () async {
+                                    Navigator.of(dialogCtx).pop();
+                                    await ctx
+                                        .read<SavingsProvider>()
+                                        .deleteObjective(obj.id);
+                                  },
+                                  child: const Text('Sí, eliminar'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Barra de progreso con porcentaje al final
+                Row(
+                  children: [
+                    Expanded(
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: AppColors.softGreen,
+                        valueColor: AlwaysStoppedAnimation(AppColors.success),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$percent%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 4),
+
+                // Montos con formato inteligente
+                Text(
+                  '$amountStr / $totalStr €',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.black,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
+
 
   Widget _buildLimitList(List<Objective> items) {
     if (items.isEmpty) {

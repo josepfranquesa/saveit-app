@@ -1,3 +1,5 @@
+import 'package:SaveIt/providers/savings_provider.dart';
+import 'package:SaveIt/providers/transaction_register_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/subcategory.dart';
@@ -564,17 +566,33 @@ class _CoinsScreenState extends State<CoinsScreen> {
                     }
                   },
                   trailing: IconButton(
-                    icon: Icon(Icons.delete, color: titleColor),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _confirmDelete(
-                        title:
-                            '¿Seguro que quieres eliminar la categoría "${cat.name}"?',
-                        onConfirm: () =>
-                            coinsProv.deleteCatSubcatAccount(id_category: cat.id, accountId: coinsProv.selectedAccount!.id),
-                      );
-                    },
-                  ),
+                  icon: Icon(Icons.delete, color: titleColor),
+                  onPressed: () {
+                    _confirmDelete(
+                      title: '¿Seguro que quieres eliminar la categoría "${cat.name}"?',
+                      onConfirm: () async {
+                        // 1) Eliminar categoría/subcategoría
+                        await coinsProv.deleteCatSubcatAccount(
+                          id_category: cat.id,
+                          accountId: coinsProv.selectedAccount!.id,
+                        );
+                        // 2) Recargar transacciones
+                        await context
+                            .read<TransactionRegisterProvider>()
+                            .getTransactionsForAccount(
+                              coinsProv.selectedAccount!.id,
+                            );
+                        // 3) Recargar objetivos y límites
+                        await context
+                            .read<SavingsProvider>()
+                            .loadObjectivesAndLimits(
+                              coinsProv.selectedAccount!.id,
+                            );
+                      },
+                    );
+                    Navigator.of(context).pop();
+                  },
+                ),
                   children: [
                     if (coinsProv.isLoadingSubcategories &&
                         (subsMap[cat.id]?.isEmpty ?? true))
