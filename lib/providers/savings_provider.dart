@@ -188,4 +188,20 @@ class SavingsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteLimit(int limitId) async {
+    isLoadingObjectives = true;
+    notifyListeners();
+
+    try {
+      await _api.deleteLimit(limitId);
+      await loadObjectivesAndLimits(_selectedAccount!.id);
+    } catch (e) {
+      debugPrint('Error al eliminar objetivo: $e');
+      rethrow;
+    } finally {
+      isLoadingObjectives = false;
+      notifyListeners();
+    }
+  }
+
 }

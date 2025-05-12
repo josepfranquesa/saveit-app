@@ -265,6 +265,15 @@ class ApiProvider extends ChangeNotifier {
     throw Exception('Error al eliminar objetivo');
   }
 
+  Future<void> deleteLimit(int id) async {
+    final resp = await dio.delete('/limit/$id');
+    if (resp.statusCode == 200 || resp.statusCode == 204) {
+      return;
+    }
+    throw Exception('Error al eliminar objetivo');
+  }
+
+
   Future<List<Objective>> fetchLimits(int accountId) async {
     final resp = await dio.get('/limit/$accountId');
     final data = resp.data;

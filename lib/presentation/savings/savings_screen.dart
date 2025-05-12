@@ -417,27 +417,86 @@ class _SavingsScreenState extends State<SavingsScreen> {
 
   Widget _buildLimitList(List<Objective> items) {
     if (items.isEmpty) {
-      return const Center(child: Text('No hay Límites'));
+      return const Center(
+        child: Text(
+          'No hay límites',
+          style: TextStyle(fontSize: 16),
+        ),
+      );
     }
+
     return ListView.separated(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 6),
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (ctx, i) {
         final lim = items[i];
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundInApp,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(lim.limit_name ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('${lim.total.toStringAsFixed(2)} €'),
-            ],
+        final provider = Provider.of<SavingsProvider>(ctx, listen: false);
+
+        return Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: ListTile(
+            isThreeLine: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            title: Text(
+              lim.limit_name ?? '-',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Theme.of(ctx).primaryColor,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${lim.total.toStringAsFixed(2)} €',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Mensuales',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.do_not_disturb_on_total_silence_outlined),
+              color: Colors.redAccent,
+              tooltip: 'Eliminar',
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: ctx,
+                  builder: (ctx3) => AlertDialog(
+                    title: const Text('Eliminar límite'),
+                    content: Text('¿Estas seguro que quieres eliminar el limite para la categoria/subcategoria "${lim.limit_name}"?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx3, false),
+                        child: const Text('No'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx3, true),
+                        child: const Text('Sí'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  provider.deleteLimit(lim.id);
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('Límite "${lim.limit_name}" eliminado')),
+                  );
+                }
+              },
+            ),
           ),
         );
       },

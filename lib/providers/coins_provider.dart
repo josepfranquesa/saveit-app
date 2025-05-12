@@ -166,6 +166,7 @@ class CoinsProvider extends ChangeNotifier {
     } else if (id_subcat != null) {
       await _api.deleteSubcategoryAccount(id_subcat, accountId);
     }
+    //actualiztar la llista de limits de la pantalla ahorros
     selectAccount(selectedAccount!);
   }
 }

@@ -4,6 +4,7 @@ import 'package:SaveIt/providers/account_list_provider.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:SaveIt/providers/bottom_bar_provider.dart';
 import 'package:SaveIt/providers/coins_provider.dart';
+import 'package:SaveIt/providers/graph_provider.dart';
 import 'package:SaveIt/providers/login_form_provider.dart';
 import 'package:SaveIt/providers/perfil_provider.dart';
 import 'package:SaveIt/providers/register_form_provider.dart';
@@ -67,6 +68,10 @@ class SaveItApp extends StatelessWidget {
         ),
         ListenableProxyProvider2<ApiProvider, AuthProvider, SavingsProvider>(
           update: (_, api, auth, __) => SavingsProvider(api: api, auth: auth),
+        ),
+
+        ListenableProxyProvider2<ApiProvider, AuthProvider, GraphProvider>(
+          update: (_, api, auth, __) => GraphProvider(api: api, auth: auth),
         ),
       ],
       child: MaterialApp(
