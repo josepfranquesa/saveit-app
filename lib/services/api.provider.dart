@@ -2,12 +2,14 @@
 
 import 'dart:async';
 import 'package:SaveIt/domain/category.dart';
+import 'package:SaveIt/domain/graphic.dart';
 import 'package:SaveIt/domain/login_response.dart';
 import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 class ApiProvider extends ChangeNotifier {
   String _token = "";
@@ -352,5 +354,40 @@ class ApiProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> createGraphData({
+    required String period,
+    required int accountId,
+    required String startDate,
+    required String endDate,
+    required List<int> categoryIds,
+  }) async {
+    final resp = await dio.post('/graph', data: {
+      'periodo': period,
+      'account_id': accountId,
+      'start_date': startDate,
+      'end_date': endDate,
+      'category_ids': categoryIds,
+    });
+
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
+      // Aquí devolvemos directamente el JSON decodificado
+      return Map<String, dynamic>.from(resp.data);
+    }
+    throw Exception('Error al crear gráfico: código ${resp.statusCode}');
+  }
+
+  Future<List<Graphic>> getGraphics(int accountId) async {
+    final res = await dio.get<List<dynamic>>(
+      '/graph/$accountId',
+      options: Options(responseType: ResponseType.json),
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      final list = res.data!;
+      return list
+          .map((e) => Graphic.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Error obteniendo gráficos: ${res.statusCode}');
+  }
 
 }

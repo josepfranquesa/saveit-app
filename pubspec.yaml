@@ -16,7 +16,13 @@ dependencies:
   flutter:
     sdk: flutter
   
-  intl: ^0.18.0
+  intl: ^0.19.0
+
+  flutter_localizations:
+    sdk: flutter
+
+  fl_chart: ^0.68.0
+
 
   # 🔹 Manejo de peticiones HTTP (Conexión con el backend Laravel)
   http: ^0.13.6

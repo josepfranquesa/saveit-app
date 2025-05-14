@@ -1,3 +1,7 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
+
 import 'package:SaveIt/app_config.dart';
 import 'package:SaveIt/presentation/auth/login_screen.dart';
 import 'package:SaveIt/providers/account_list_provider.dart';
@@ -12,8 +16,6 @@ import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/providers/transaction_register_provider.dart';
 import 'package:SaveIt/services/api.provider.dart';
 import 'package:SaveIt/utils/ui/theme.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 void main() {
   runApp(const SaveItApp());
@@ -24,7 +26,7 @@ class SaveItApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var config = AppConfig.of(context);
+    final config = AppConfig.of(context);
 
     return MultiProvider(
       providers: [
@@ -56,7 +58,8 @@ class SaveItApp extends StatelessWidget {
 
         // 6. Transacciones (y hace uso de AuthProvider)
         ListenableProxyProvider2<ApiProvider, AuthProvider, TransactionRegisterProvider>(
-          update: (_, api, auth, __) => TransactionRegisterProvider(api: api, auth: auth),
+          update: (_, api, auth, __) =>
+              TransactionRegisterProvider(api: api, auth: auth),
         ),
 
         // 7. Otras secciones que necesitan ApiProvider + AuthProvider
@@ -69,15 +72,27 @@ class SaveItApp extends StatelessWidget {
         ListenableProxyProvider2<ApiProvider, AuthProvider, SavingsProvider>(
           update: (_, api, auth, __) => SavingsProvider(api: api, auth: auth),
         ),
-
         ListenableProxyProvider2<ApiProvider, AuthProvider, GraphProvider>(
           update: (_, api, auth, __) => GraphProvider(api: api, auth: auth),
         ),
       ],
       child: MaterialApp(
-        title: config!.appName,
-        debugShowCheckedModeBanner: config.debugShowCheckedModeBanner,
+        title: config?.appName ?? 'SaveIt',
+        debugShowCheckedModeBanner: config?.debugShowCheckedModeBanner ?? false,
         theme: SaveItTheme.light,
+
+        // → Añadimos soporte de localizaciones de Material
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('es', 'ES'),
+          // si necesitas inglés u otros:
+          // Locale('en', 'US'),
+        ],
+
         home: const LoginScreen(),
       ),
     );
