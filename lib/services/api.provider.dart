@@ -126,32 +126,33 @@ class ApiProvider extends ChangeNotifier {
   }
 
   Future<Response<Map<String, dynamic>>> createRegister({
+    required int userId,
     required int accountId,
     required double amount,
     required String origin,
     int? objectiveId,
     double? objectiveAmount,
-    int? subcategory_id,
-    int? periodicId, 
-    required int userId, 
+    int? subcategoryId,
+    int? periodicInterval,
+    String? periodicUnit,
   }) async {
-    final Map<String, dynamic> body = {
+    final body = <String, dynamic>{
       'user_id': userId,
       'account_id': accountId,
       'amount': amount,
       'origin': origin,
-      if (objectiveId != null) 'objectiveId': objectiveId,
-      if (objectiveAmount != null) 'objectiveAmount': objectiveAmount,
-      if (subcategory_id != null) 'subcategory_id': subcategory_id,
-      if (periodicId != null) 'periodicId': periodicId,
+      if (objectiveId != null) 'objective_id': objectiveId,
+      if (objectiveAmount != null) 'objective_amount': objectiveAmount,
+      if (subcategoryId != null) 'subcategory_id': subcategoryId,
+      if (periodicInterval != null) 'periodic_interval': periodicInterval,
+      if (periodicUnit != null) 'periodic_unit': periodicUnit,
     };
 
     try {
-      final response = await dio.post<Map<String, dynamic>>(
+      return await dio.post<Map<String, dynamic>>(
         '/register/account',
         data: body,
       );
-      return response;
     } on DioException {
       rethrow;
     }

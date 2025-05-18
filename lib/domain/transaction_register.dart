@@ -9,6 +9,9 @@ class Transaction {
   final String? nameCategory;    // Extras: solo este campo
   final int? objectiveId;
   final String? objectiveName;
+  final int? periodicId;
+  final int? periodicInterval;
+  final String? periodicUnit;
 
   Transaction({
     required this.id,
@@ -21,6 +24,9 @@ class Transaction {
     this.nameCategory,           // ajustado
     this.objectiveId,
     this.objectiveName,
+    this.periodicId,
+    this.periodicInterval,
+    this.periodicUnit,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -76,6 +82,13 @@ class Transaction {
       }
     }
 
+    final rawPeriodicId = json['periodic_id'];
+    final periodicId = rawPeriodicId != null
+        ? (rawPeriodicId is int ? rawPeriodicId : int.parse(rawPeriodicId.toString()))
+        : null;
+    final periodicInterval = json['periodic_interval'] as int?;
+    final periodicUnit = json['periodic_unit'] as String?;
+
     return Transaction(
       id: id,
       userId: userId,
@@ -87,6 +100,9 @@ class Transaction {
       nameCategory: nameCategory,
       objectiveId: objectiveId,
       objectiveName: objectiveName,
+      periodicId: periodicId,
+      periodicInterval: periodicInterval,
+      periodicUnit: periodicUnit,
     );
   }
 }

@@ -26,6 +26,7 @@ class TransactionRegisterScreen extends StatefulWidget {
 class _TransactionRegisterScreenState
     extends State<TransactionRegisterScreen> {
   Account? selectedAccount;
+  String balanceText = '';
 
   @override
   void initState() {
@@ -50,16 +51,13 @@ class _TransactionRegisterScreenState
   void _selectAccount(Account account) {
     setState(() {
       selectedAccount = account;
+      balanceText = selectedAccount != null
+        ? '${selectedAccount!.balance.toStringAsFixed(2)}€'
+        : '';
     });
     context
         .read<TransactionRegisterProvider>()
         .getTransactionsForAccount(account.id);
-  }
-
-  Future<void> _showEditRegisterDialog(BuildContext context, Transaction t) async {
-    // ¡Copia y adapta íntegro el contenido del _showCreateRegisterDialog!,
-    // inicializando controllers con t.origin y t.amount,
-    // y llamando a prov.updateRegister(...) en lugar de create.
   }
 
   // Diálogo de asignar categoría
@@ -135,7 +133,6 @@ class _TransactionRegisterScreenState
     );
   }
 
-  /// Diálogo para crear un nuevo registro
   Future<void> _showCreateRegisterDialog(BuildContext context) async {
     final formKey = GlobalKey<FormState>();
     String origin = '';
@@ -144,10 +141,14 @@ class _TransactionRegisterScreenState
     int? selectedSubcategoryId;
     int? selectedObjectiveId;
     double objectiveAmount = 0.0;
-    final amountController = TextEditingController();
 
-    final prov =
-        Provider.of<TransactionRegisterProvider>(context, listen: false);
+    // Variables para registro periódico
+    bool isPeriodic = false;
+    int periodicityInterval = 1;
+    String periodicityUnit = 'Días';
+
+    final prov = Provider.of<TransactionRegisterProvider>(context, listen: false);
+
     if (selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Debe seleccionar una cuenta primero')),
@@ -155,9 +156,7 @@ class _TransactionRegisterScreenState
       return;
     }
 
-    // Carga objetivos y subcategorías antes de mostrar diálogo
-    final objectives =
-        await prov.getObjectivesForAccount(selectedAccount!.id);
+    final objectives = await prov.getObjectivesForAccount(selectedAccount!.id);
     await prov.getCatAndSubcategoriesForAccount(selectedAccount!.id);
 
     await showDialog(
@@ -166,12 +165,9 @@ class _TransactionRegisterScreenState
       builder: (_) => StatefulBuilder(
         builder: (context, setState) {
           final filteredSubs = enteredAmount > 0
-              ? prov.subCategories
-                  .where((s) => s.categoryType == 'Ingreso')
-                  .toList()
-              : prov.subCategories
-                  .where((s) => s.categoryType == 'Despesa')
-                  .toList();
+              ? prov.subCategories.where((s) => s.categoryType == 'Ingreso').toList()
+              : prov.subCategories.where((s) => s.categoryType == 'Despesa').toList();
+
           return AlertDialog(
             title: const Text('Nuevo Registro'),
             content: SingleChildScrollView(
@@ -183,123 +179,142 @@ class _TransactionRegisterScreenState
                     // Origen
                     TextFormField(
                       decoration: const InputDecoration(labelText: 'Origen'),
-                      validator: (v) => v == null || v.isEmpty
-                          ? 'Ingrese un origen'
-                          : null,
+                      validator: (v) => v == null || v.isEmpty ? 'Ingrese un origen' : null,
                       onSaved: (v) => origin = v!.trim(),
                     ),
                     const SizedBox(height: 16),
+
                     // Importe
                     TextFormField(
-                      controller: amountController,
-                      decoration:
-                          const InputDecoration(labelText: 'Importe'),
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true, signed: true),
-                      onChanged: (v) =>
-                          setState(() => enteredAmount = double.tryParse(v) ?? 0.0),
+                      decoration: const InputDecoration(labelText: 'Importe'),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true, signed: true),
+                      onChanged: (v) => setState(() => enteredAmount = double.tryParse(v) ?? 0.0),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Ingrese un importe';
-                        if (double.tryParse(v) == null)
-                          return 'Importe inválido';
+                        if (double.tryParse(v) == null) return 'Importe inválido';
                         return null;
                       },
                       onSaved: (v) => amount = double.parse(v!),
                     ),
                     const SizedBox(height: 24),
+
                     // Subcategoría
                     if (enteredAmount != 0) ...[
                       DropdownButtonFormField<int>(
-                        decoration:
-                            const InputDecoration(labelText: 'Subcategoría'),
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        decoration: const InputDecoration(labelText: 'Subcategoría'),
                         items: [
-                          const DropdownMenuItem<int>(
-                              value: null, child: Text('Ninguna')),
-                          ...filteredSubs.map(
-                            (sub) => DropdownMenuItem<int>(
-                              value: sub.id,
-                              child: Text(sub.name),
-                            ),
-                          ),
+                          const DropdownMenuItem(value: null, child: Text('Ninguna')),
+                          ...filteredSubs.map((sub) => DropdownMenuItem(
+                                value: sub.id,
+                                child: Text(sub.name),
+                              )),
                         ],
                         value: selectedSubcategoryId,
-                        onChanged: (id) => setState(() {
-                          selectedSubcategoryId = id;
-                        }),
+                        onChanged: (id) => setState(() => selectedSubcategoryId = id),
+                        onSaved: (v) => selectedSubcategoryId = v,
                       ),
                       const SizedBox(height: 24),
                     ],
+
                     // Objetivo
                     if (enteredAmount > 0) ...[
                       DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(
-                            labelText: 'Asociar a objetivo'),
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        decoration: const InputDecoration(labelText: 'Asociar a objetivo'),
                         items: [
-                          const DropdownMenuItem<int>(
-                              value: null, child: Text('Ninguno')),
-                          ...objectives.map(
-                            (obj) => DropdownMenuItem<int>(
-                              value: obj.id,
-                              child: Text(obj.title ?? 'Sin título'),
-                            ),
-                          ),
+                          const DropdownMenuItem(value: null, child: Text('Ninguno')),
+                          ...objectives.map((obj) => DropdownMenuItem(
+                                value: obj.id,
+                                child: Text(obj.title ?? 'Sin título'),
+                              )),
                         ],
                         value: selectedObjectiveId,
-                        onChanged: (id) => setState(() {
-                          selectedObjectiveId = id;
-                        }),
+                        onChanged: (id) => setState(() => selectedObjectiveId = id),
+                        onSaved: (v) => selectedObjectiveId = v,
                       ),
                       if (selectedObjectiveId != null) ...[
                         const SizedBox(height: 16),
                         TextFormField(
-                          decoration: const InputDecoration(
-                              labelText: 'Importe para objetivo'),
+                          decoration:
+                              const InputDecoration(labelText: 'Importe para objetivo'),
                           keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
+                              const TextInputType.numberWithOptions(decimal: true),
                           validator: (v) {
-                            if (v == null || v.isEmpty) {
-                              return 'Ingrese un importe para el objetivo';
-                            }
+                            if (v == null || v.isEmpty) return 'Ingrese un importe para el objetivo';
                             final parsed = double.tryParse(v);
                             if (parsed == null) return 'Importe inválido';
-                            if (parsed > enteredAmount) {
-                              return 'No puede exceder el importe total';
-                            }
+                            if (parsed > enteredAmount) return 'No puede exceder el importe total';
                             return null;
                           },
-                          onSaved: (v) =>
-                              objectiveAmount = double.parse(v!),
+                          onSaved: (v) => objectiveAmount = double.parse(v!),
                         ),
                       ],
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // Checkbox para registro periódico
+                    CheckboxListTile(
+                      title: const Text('¿Fijarlo como registro periódico?'),
+                      value: isPeriodic,
+                      onChanged: (checked) => setState(() => isPeriodic = checked!),
+                    ),
+
+                    // Campos de periodicidad
+                    if (isPeriodic) ...[
+                      TextFormField(
+                        decoration: const InputDecoration(labelText: 'Quantes veces quieres que se repita'),
+                        keyboardType: TextInputType.number,
+                        initialValue: periodicityInterval.toString(),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Ingrese un valor';
+                          if (int.tryParse(v) == null || int.parse(v) < 1) {
+                            return 'Debe ser un número >= 1';
+                          }
+                          return null;
+                        },
+                        onSaved: (v) => periodicityInterval = int.parse(v!),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Quando se tendrà que repetir'),
+                        items: const [
+                          DropdownMenuItem(value: 'Días', child: Text('Días')),
+                          DropdownMenuItem(value: 'Semanas', child: Text('Semanas')),
+                          DropdownMenuItem(value: 'Meses', child: Text('Meses')),
+                        ],
+                        value: periodicityUnit,
+                        onChanged: (unit) => setState(() => periodicityUnit = unit!),
+                        onSaved: (unit) => periodicityUnit = unit!,
+                      ),
                     ],
                   ],
                 ),
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
               ElevatedButton(
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
                   formKey.currentState!.save();
+
                   await prov.createRegister(
                     context: context,
                     accountId: selectedAccount!.id,
                     amount: amount,
                     origin: origin,
                     objectiveId: selectedObjectiveId,
-                    objectiveAmount: selectedObjectiveId != null
-                        ? objectiveAmount
-                        : null,
+                    objectiveAmount: selectedObjectiveId != null ? objectiveAmount : null,
                     subcategoryId: selectedSubcategoryId,
-                    periodicId: null,
+                    periodicSettings: isPeriodic
+                        ? {
+                            'interval': periodicityInterval,
+                            'unit': periodicityUnit,
+                          }
+                        : null,
                   );
+
                   if (context.mounted) Navigator.of(context).pop();
                 },
                 child: const Text('Crear'),
@@ -311,7 +326,7 @@ class _TransactionRegisterScreenState
     );
   }
 
-  /// Diálogo para añadir o unirse a cuenta
+  /// Diálog para añadir o unirse a cuenta
   void _showAddAccountOptions(BuildContext context) {
     showDialog(
       context: context,
@@ -437,8 +452,8 @@ class _TransactionRegisterScreenState
     Widget build(BuildContext context) {
     final accountProv = context.watch<AccountListProvider>();
     final txProv      = context.watch<TransactionRegisterProvider>();
-
-    final balanceText = selectedAccount != null
+     
+    balanceText = selectedAccount != null
         ? '${selectedAccount!.balance.toStringAsFixed(2)}€'
         : '';
 

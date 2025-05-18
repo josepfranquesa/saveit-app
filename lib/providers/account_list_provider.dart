@@ -12,6 +12,7 @@ class AccountListProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  /// Carga desde el backend las cuentas del usuario
   Future<void> fetchAccounts(int userId) async {
     _isLoading = true;
     notifyListeners();
@@ -24,7 +25,9 @@ class AccountListProvider extends ChangeNotifier {
       } else if (data is List) {
         accountsJson = data;
       }
-      _accounts = accountsJson.map((json) => Account.fromJson(json)).toList();
+      _accounts = accountsJson
+          .map((json) => Account.fromJson(json))
+          .toList();
     } catch (e) {
       debugPrint('Error fetching accounts: $e');
     } finally {
@@ -39,8 +42,20 @@ class AccountListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Limpia la lista de cuentas
   void clear() {
     _accounts = [];
     notifyListeners();
+  }
+
+  void adjustAccountBalance(int accountId, double delta) {
+    final idx = _accounts.indexWhere((a) => a.id == accountId);
+    if (idx != -1) {
+      final old = _accounts[idx];
+      _accounts[idx] = old.copyWith(
+        balance: old.balance + delta,
+      );
+      notifyListeners();
+    }
   }
 }
