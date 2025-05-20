@@ -391,4 +391,12 @@ class ApiProvider extends ChangeNotifier {
     throw Exception('Error obteniendo gráficos: ${res.statusCode}');
   }
 
+  Future<void> deleteGraph(int id) async {
+    final res = await dio.delete('/graph/$id');
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
+    throw Exception('Error al eliminar gráfico: ${res.statusCode}');
+  }
+
 }

@@ -100,6 +100,7 @@ class _TransactionRegisterScreenState
                 categoryId: selectedCatId,
                 context: context,
               );
+              //actualitzar la llista de categories i subcategories de la pantalla coins de la conta selecionada
               Navigator.pop(context);
             },
             child: const Text('Asignar'),

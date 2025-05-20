@@ -321,14 +321,14 @@ class _CoinsScreenState extends State<CoinsScreen> {
     final titleColor  = isIngreso ? AppColors.green     : AppColors.red;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       decoration: BoxDecoration(
         color: tileColor,
         border: Border.all(color: AppColors.grey),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(3),
       ),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
         trailing: Transform.scale(
           scale: 0.7,
           child: Icon(Icons.expand_more, color: titleColor),
@@ -347,7 +347,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               category.amountMonth.toStringAsFixed(2),
               maxLines: 1,

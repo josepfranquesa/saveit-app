@@ -166,4 +166,10 @@ class GraphProvider extends ChangeNotifier {
     _graphics = await _api.getGraphics(accountId);
     notifyListeners();
   }
+
+  Future<void> deleteGraph(int id) async {
+    await _api.deleteGraph(id);
+    _graphics = await _api.getGraphics(_selectedAccount!.id);
+    notifyListeners();
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:SaveIt/domain/graphic.dart';
+import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -55,6 +56,7 @@ class _GraphScreenState extends State<GraphScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundInApp,
       appBar: AppBar(title: const Text('Gráficos')),
       body: Column(
         children: [
@@ -126,117 +128,174 @@ class _GraphScreenState extends State<GraphScreen> {
   }
 
   Widget _buildGraphCard(Graphic g) {
-    // 1. Convertir data y labels a FlSpots
     final spots = g.data
         .asMap()
         .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
 
-    // 2. Calcular intervalos
     final xCount = spots.length;
-    // Queremos unas 5 etiquetas en X
     final desiredXLabels = 5;
-    // Si hay pocos puntos, etiquetamos todos
     final xInterval = xCount > desiredXLabels
         ? (xCount - 1) / (desiredXLabels - 1)
         : 1.0;
 
-    // Para Y, calculamos el máximo valor
     final maxY = g.data.isEmpty ? 0.0 : g.data.reduce((a, b) => a > b ? a : b);
-    // Queremos unas 5 etiquetas en Y
-    final desiredYLabels = 5;
-    // Evitamos division cero
-    final yInterval = maxY > 0
-        ? maxY / (desiredYLabels - 1)
-        : 1.0;
+    final minY = g.data.isEmpty ? 0.0 : g.data.reduce((a, b) => a < b ? a : b);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _periodLabel(g.periodType),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${DateFormat('dd/MM/yyyy').format(g.startDate)} - '
-              '${DateFormat('dd/MM/yyyy').format(g.endDate)}',
-            ),
-            const SizedBox(height: 12),
-            AspectRatio(
-              aspectRatio: 1.7,
-              child: LineChart(
-                LineChartData(
-                  minX: 0,
-                  maxX: (spots.length - 1).toDouble(),
-                  minY: 0,
-                  maxY: maxY,
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: xInterval,
-                        getTitlesWidget: (value, meta) {
-                          final idx = value.toInt();
-                          // Solo dibujamos si idx está dentro y es un múltiplo razonable
-                          if (idx < 0 || idx >= g.labels.length) return const SizedBox();
-                          // Redondeamos value/xInterval para evitar decimales
-                          if ((idx / xInterval).roundToDouble() != idx / xInterval) {
-                            return const SizedBox();
-                          }
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              g.labels[idx],
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: yInterval,
-                        getTitlesWidget: (value, meta) {
-                          // Redondeamos el valor a entero
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
-                          );
-                        },
-                      ),
-                    ),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: true,
-                    horizontalInterval: yInterval,
-                    verticalInterval: xInterval,
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      dotData: FlDotData(show: true),
-                      barWidth: 2,
-                    ),
-                  ],
+    // Solo 3 niveles en Y
+    final desiredYLabels = 3;
+    final yRange = (maxY - minY).abs();
+    final yInterval = yRange > 0 ? yRange / (desiredYLabels - 1) : 1.0;
+
+    return Stack(
+      children: [
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _periodLabel(g.periodType),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  '${DateFormat('dd/MM/yyyy').format(g.startDate)} - '
+                  '${DateFormat('dd/MM/yyyy').format(g.endDate)}',
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 380,
+                    child: AspectRatio(
+                      aspectRatio: 1.2,
+                      child: LineChart(
+                        LineChartData(
+                          minX: 0,
+                          maxX: (spots.length - 1).toDouble(),
+                          minY: minY,
+                          maxY: maxY,
+                          lineTouchData: LineTouchData(
+                            touchTooltipData: LineTouchTooltipData(
+                              getTooltipItems: (touchedSpots) {
+                                return touchedSpots.map((spot) {
+                                  final idx = spot.x.toInt();
+                                  return LineTooltipItem(
+                                    '${g.labels[idx]}\n${spot.y.toStringAsFixed(2)}',
+                                    const TextStyle(color: Colors.white),
+                                  );
+                                }).toList();
+                              },
+                            ),
+                          ),
+                          titlesData: FlTitlesData(
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: xInterval,
+                                getTitlesWidget: (value, meta) {
+                                  final idx = value.toInt();
+                                  if (idx < 0 || idx >= g.labels.length) return const SizedBox();
+                                  if ((idx / xInterval).roundToDouble() != idx / xInterval) {
+                                    return const SizedBox();
+                                  }
+                                  return SideTitleWidget(
+                                    axisSide: meta.axisSide,
+                                    child: Text(
+                                      g.labels[idx],
+                                      style: const TextStyle(fontSize: 9),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: yInterval,
+                                reservedSize: 30, // más compacto
+                                getTitlesWidget: (value, meta) {
+                                  return SideTitleWidget(
+                                    axisSide: meta.axisSide,
+                                    child: Text(
+                                      value.toInt().toString(),
+                                      style: const TextStyle(fontSize: 8),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: true,
+                            horizontalInterval: yInterval,
+                            verticalInterval: xInterval,
+                            getDrawingHorizontalLine: (value) => FlLine(
+                              color: Colors.grey.withOpacity(0.2),
+                              strokeWidth: 1,
+                            ),
+                            getDrawingVerticalLine: (value) => FlLine(
+                              color: Colors.grey.withOpacity(0.2),
+                              strokeWidth: 1,
+                            ),
+                          ),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: false,
+                              barWidth: 2,
+                              color: Colors.blueAccent,
+                              dotData: FlDotData(show: true),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: IconButton(
+            icon: const Icon(Icons.cancel_presentation_outlined, size: 20),
+            onPressed: () {
+              context.read<GraphProvider>().deleteGraph(g.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Gráfico eliminado correctamente')),
+              );
+            },
+            tooltip: 'Eliminar gráfico',
+          ),
+        ),
+      ],
     );
   }
+
+
+
+
 
 
   void _openGraphDialog(BuildContext context) {

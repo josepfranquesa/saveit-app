@@ -160,7 +160,7 @@ class CoinsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteCatSubcatAccount({int? id_category, int? id_subcat,   required int accountId,}) async {
+  Future<void> deleteCatSubcatAccount({int? id_category, int? id_subcat, required int accountId,}) async {
     if (id_category != null) {
       await _api.deleteCategoryAccount(id_category, accountId);
     } else if (id_subcat != null) {
