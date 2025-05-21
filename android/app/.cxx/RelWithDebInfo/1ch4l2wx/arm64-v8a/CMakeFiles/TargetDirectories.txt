@@ -1,0 +1,2 @@
+/Users/josep/Desktop/frontendapp/android/app/.cxx/RelWithDebInfo/1ch4l2wx/arm64-v8a/CMakeFiles/rebuild_cache.dir
+/Users/josep/Desktop/frontendapp/android/app/.cxx/RelWithDebInfo/1ch4l2wx/arm64-v8a/CMakeFiles/edit_cache.dir
