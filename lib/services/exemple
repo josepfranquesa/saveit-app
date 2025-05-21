@@ -1,6 +1,0 @@
-Aquí van las implementaciones de los servicios externos, como API REST, Firebase, almacenamiento local, etc.
-
-Ejemplos:
-api_service.dart → Llamadas a API
-firebase_service.dart → Conexión a Firebase
-storage_service.dart → Manejo de almacenamiento local

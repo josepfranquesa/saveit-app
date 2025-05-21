@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:SaveIt/presentation/auth/register_screen.dart';
 import 'package:SaveIt/presentation/nav/main_screen.dart';
 import 'package:SaveIt/providers/login_form_provider.dart';

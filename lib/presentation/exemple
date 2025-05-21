@@ -1,6 +1,0 @@
-Contiene todo lo relacionado con la UI (pantallas, widgets, temas, etc.).
-
-Ejemplos:
-screens/ → Pantallas principales (HomeScreen.dart, LoginScreen.dart)
-widgets/ → Componentes reutilizables (CustomButton.dart, LoadingIndicator.dart)
-themes/ → Configuración de temas (AppTheme.dart)
