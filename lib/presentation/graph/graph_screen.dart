@@ -9,12 +9,10 @@ import 'package:SaveIt/providers/account_list_provider.dart';
 import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/providers/graph_provider.dart';
 import 'package:SaveIt/domain/account.dart';
-import 'package:SaveIt/domain/category.dart';
-import 'package:SaveIt/domain/subcategory.dart';
 
 class GraphScreen extends StatefulWidget {
   static const String id = 'graph_screen';
-  const GraphScreen({Key? key}) : super(key: key);
+  const GraphScreen({super.key});
 
   @override
   _GraphScreenState createState() => _GraphScreenState();
@@ -135,7 +133,7 @@ class _GraphScreenState extends State<GraphScreen> {
         .toList();
 
     final xCount = spots.length;
-    final desiredXLabels = 5;
+    const desiredXLabels = 5;
     final xInterval = xCount > desiredXLabels
         ? (xCount - 1) / (desiredXLabels - 1)
         : 1.0;
@@ -144,7 +142,7 @@ class _GraphScreenState extends State<GraphScreen> {
     final minY = g.data.isEmpty ? 0.0 : g.data.reduce((a, b) => a < b ? a : b);
 
     // Solo 3 niveles en Y
-    final desiredYLabels = 3;
+    const desiredYLabels = 3;
     final yRange = (maxY - minY).abs();
     final yInterval = yRange > 0 ? yRange / (desiredYLabels - 1) : 1.0;
 
@@ -223,8 +221,8 @@ class _GraphScreenState extends State<GraphScreen> {
                                 },
                               ),
                             ),
-                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           ),
                           gridData: FlGridData(
                             show: true,
@@ -246,7 +244,7 @@ class _GraphScreenState extends State<GraphScreen> {
                               isCurved: false,
                               barWidth: 2,
                               color: Colors.blueAccent,
-                              dotData: FlDotData(show: true),
+                              dotData: const FlDotData(show: true),
                               belowBarData: BarAreaData(
                                 show: true,
                                 gradient: LinearGradient(
@@ -405,11 +403,11 @@ class _GraphScreenState extends State<GraphScreen> {
                         try {
                           await context.read<GraphProvider>().createGraph();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Gráfico creado correctamente')),
+                            const SnackBar(content: Text('Gráfico creado correctamente')),
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error al crear gráfico: \$e')),
+                            const SnackBar(content: Text('Error al crear gráfico: \$e')),
                           );
                         }
                         Navigator.pop(ctx);

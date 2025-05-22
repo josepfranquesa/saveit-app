@@ -1,4 +1,3 @@
-import 'package:SaveIt/providers/transaction_register_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/subcategory.dart';
@@ -27,7 +26,7 @@ class CoinsProvider extends ChangeNotifier {
   List<Category> categories = [];
   Map<int, List<SubCategory>> subcategoriesMap = {};
 
-  Map<int,bool> _loadingSubcats = {};
+  final Map<int,bool> _loadingSubcats = {};
   bool isLoadingSubcat(int catId) => _loadingSubcats[catId] ?? false;
 
 

@@ -13,7 +13,7 @@ import 'package:provider/provider.dart';
 
 class SavingsScreen extends StatefulWidget {
   static String id = 'savings_screen';
-  const SavingsScreen({Key? key}) : super(key: key);
+  const SavingsScreen({super.key});
   @override
   _SavingsScreenState createState() => _SavingsScreenState();
 }
@@ -157,7 +157,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
   }
 
   Future<void> _showCreateObjectiveDialog(SavingsProvider prov) async {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String title = "";
     double amount = 0.0;
 
@@ -166,7 +166,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
       builder: (_) => AlertDialog(
         title: const Text("Crear Objetivo"),
         content: Form(
-          key: _formKey,
+          key: formKey,
           child: SizedBox(
             width: 300,
             child: Column(
@@ -181,7 +181,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   decoration: const InputDecoration(labelText: "Importe"),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: (v) {
                     if (v == null || v.isEmpty) return "Ingrese un importe";
                     if (double.tryParse(v) == null) return "Importe inválido";
@@ -199,8 +199,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
               child: const Text("Cancelar")),
           ElevatedButton(
             onPressed: () async {
-              if (!_formKey.currentState!.validate()) return;
-              _formKey.currentState!.save();
+              if (!formKey.currentState!.validate()) return;
+              formKey.currentState!.save();
               await prov.createGoal(title: title, amount: amount);
               if (mounted) Navigator.pop(context);
             },
@@ -212,7 +212,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
   }
 
   Future<void> _showCreateLimitDialog(SavingsProvider prov) async {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     double amount = 0.0;
     final subs = prov.subCategories;
 
@@ -233,7 +233,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
             return AlertDialog(
               title: const Text("Crear Límite"),
               content: Form(
-                key: _formKey,
+                key: formKey,
                 child: SizedBox(
                   width: 300,
                   child: SingleChildScrollView(
@@ -248,7 +248,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                             onChanged: (v) => setState(() => selectedSub = v),
                             dense: true,
                           );
-                        }).toList(),
+                        }),
                         const SizedBox(height: 16),
                         TextFormField(
                           decoration:
@@ -273,9 +273,9 @@ class _SavingsScreenState extends State<SavingsScreen> {
                     child: const Text("Cancelar")),
                 ElevatedButton(
                   onPressed: () async {
-                    if (!_formKey.currentState!.validate() ||
+                    if (!formKey.currentState!.validate() ||
                         selectedSub == null) return;
-                    _formKey.currentState!.save();
+                    formKey.currentState!.save();
                     await prov.createLimit(
                         subcategoryId: selectedSub!.id, amount: amount);
                     if (mounted) Navigator.pop(ctx);
@@ -293,7 +293,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
   Widget _buildObjectiveList(List<Objective> items) {
     // formateador con siempre 2 decimales
     final twoDecFormatter = NumberFormat('#,##0.00', 'es_ES');
-    String _smartFormat(double value) {
+    String smartFormat(double value) {
       final s = twoDecFormatter.format(value);
       return s.endsWith(',00') ? s.substring(0, s.length - 3) : s;
     }
@@ -306,8 +306,8 @@ class _SavingsScreenState extends State<SavingsScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (ctx, i) {
         final obj       = items[i];
-        final amountStr = _smartFormat(obj.amount);
-        final totalStr  = _smartFormat(obj.total);
+        final amountStr = smartFormat(obj.amount);
+        final totalStr  = smartFormat(obj.total);
         final progress  = (obj.amount / obj.total).clamp(0.0, 1.0);
         final percent   = (progress * 100).toStringAsFixed(0);
 
@@ -382,7 +382,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
                         value: progress,
                         minHeight: 8,
                         backgroundColor: AppColors.softGreen,
-                        valueColor: AlwaysStoppedAnimation(AppColors.success),
+                        valueColor: const AlwaysStoppedAnimation(AppColors.success),
                       ),
                     ),
                     const SizedBox(width: 8),

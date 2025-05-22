@@ -1,10 +1,6 @@
-import 'package:SaveIt/domain/objective.dart';
-import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:SaveIt/providers/account_list_provider.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
-import 'package:SaveIt/providers/coins_provider.dart';
-import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/account.dart';

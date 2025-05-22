@@ -9,7 +9,6 @@ import 'package:SaveIt/domain/objective.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 
 class ApiProvider extends ChangeNotifier {
   String _token = "";
@@ -40,15 +39,6 @@ class ApiProvider extends ChangeNotifier {
 
   ApiProvider._();
 
-  // Interceptor para agregar el token a las peticiones si es necesario
-  _tokenInterceptor() {
-    return InterceptorsWrapper(onRequest: (options, handler) async {
-      if (options.uri.toString().contains("api") && _token != "") {
-        options.headers["Authorization"] = 'Bearer $_token';
-      }
-      return handler.next(options);
-    });
-  }
 
   void setToken(String token) {
     _token = token;

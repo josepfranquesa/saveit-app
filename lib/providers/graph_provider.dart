@@ -12,16 +12,15 @@ enum PeriodType { day, week, month, quarter, year, custom }
 
 class GraphProvider extends ChangeNotifier {
   late final ApiProvider _api;
-  late final AuthProvider _auth;
   static GraphProvider? _instance;
   bool _localeInitialized = false;
 
-  GraphProvider._internal(this._api, this._auth) {
+  GraphProvider._internal(this._api) {
     Intl.defaultLocale = 'es_ES';
     initializeDateFormatting('es_ES', null).then((_) => _localeInitialized = true);
   }
   factory GraphProvider({ required ApiProvider api, required AuthProvider auth }) {
-    _instance ??= GraphProvider._internal(api, auth);
+    _instance ??= GraphProvider._internal(api);
     return _instance!;
   }
 
@@ -85,7 +84,11 @@ class GraphProvider extends ChangeNotifier {
     notifyListeners();
     if (a != null) getGraphData(a.id);
   }
-  void toggleSubCategory(SubCategory s) { if (_selectedSubs.contains(s)) _selectedSubs.remove(s); else _selectedSubs.add(s); notifyListeners(); }
+  void toggleSubCategory(SubCategory s) { if (_selectedSubs.contains(s)) {
+    _selectedSubs.remove(s);
+  } else {
+    _selectedSubs.add(s);
+  } notifyListeners(); }
 
   List<String> _generateDayOptions(int days) {
     final now = DateTime.now();
@@ -93,7 +96,7 @@ class GraphProvider extends ChangeNotifier {
   }
   List<String> _generateWeekOptions(int weeks) {
     final now = DateTime.now();
-    return List.generate(weeks, (i) { final start = now.subtract(Duration(days: now.weekday - 1 + 7 * i)); final end = start.add(Duration(days: 6)); return '${DateFormat('dd/MM').format(start)} - ${DateFormat('dd/MM').format(end)}'; });
+    return List.generate(weeks, (i) { final start = now.subtract(Duration(days: now.weekday - 1 + 7 * i)); final end = start.add(const Duration(days: 6)); return '${DateFormat('dd/MM').format(start)} - ${DateFormat('dd/MM').format(end)}'; });
   }
   List<String> _generateMonthOptions(int months) {
     final now = DateTime.now();

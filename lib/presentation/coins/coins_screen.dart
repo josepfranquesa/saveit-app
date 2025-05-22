@@ -2,7 +2,6 @@ import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/providers/transaction_register_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:SaveIt/domain/category.dart';
-import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/account.dart';
 import 'package:SaveIt/providers/coins_provider.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
@@ -13,7 +12,7 @@ import 'package:provider/provider.dart';
 class CoinsScreen extends StatefulWidget {
   static String id = 'coins_screen';
 
-  const CoinsScreen({Key? key}) : super(key: key);
+  const CoinsScreen({super.key});
 
   @override
   _CoinsScreenState createState() => _CoinsScreenState();
@@ -284,8 +283,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 ...despesas
-                    .map((cat) => _categoryTile(cat, coinsProv))
-                    .toList(),
+                    .map((cat) => _categoryTile(cat, coinsProv)),
               ],
             ),
           ),
@@ -303,8 +301,7 @@ class _CoinsScreenState extends State<CoinsScreen> {
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 ...ingresos
-                    .map((cat) => _categoryTile(cat, coinsProv))
-                    .toList(),
+                    .map((cat) => _categoryTile(cat, coinsProv)),
               ],
             ),
           ),

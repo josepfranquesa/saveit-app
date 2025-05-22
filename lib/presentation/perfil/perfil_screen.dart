@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import '../auth/login_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
-  const PerfilScreen({Key? key}) : super(key: key);
+  const PerfilScreen({super.key});
 
   @override
   State<PerfilScreen> createState() => _PerfilScreenState();
