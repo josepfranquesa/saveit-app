@@ -17,6 +17,7 @@ class AccountListProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      clear();
       final response = await _api.getAccountsByUserId(userId);
       final data = response.data;
       List<dynamic> accountsJson = [];
@@ -48,14 +49,17 @@ class AccountListProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void adjustAccountBalance(int accountId, double delta) {
-    final idx = _accounts.indexWhere((a) => a.id == accountId);
-    if (idx != -1) {
-      final old = _accounts[idx];
-      _accounts[idx] = old.copyWith(
-        balance: old.balance + delta,
-      );
-      notifyListeners();
+    void adjustAccountBalance(int accountId, double delta, {bool reverse = false}) {
+      final idx = _accounts.indexWhere((a) => a.id == accountId);
+      if (idx != -1) {
+        final old = _accounts[idx];
+        final effectiveDelta = reverse ? -delta.abs() : delta.abs();
+
+        _accounts[idx] = old.copyWith(
+          balance: old.balance + effectiveDelta,
+        );
+        notifyListeners();
+      }
     }
-  }
+
 }

@@ -16,14 +16,11 @@ dependencies:
   flutter:
     sdk: flutter
   
-  intl: ^0.19.0
-
   flutter_localizations:
     sdk: flutter
 
-  fl_chart: ^1.0.0
-
-
+  fl_chart: ^0.63.0
+  
   # 🔹 Manejo de peticiones HTTP (Conexión con el backend Laravel)
   http: ^1.4.0
   dio: ^5.4.0
@@ -47,7 +44,7 @@ dev_dependencies:
     sdk: flutter
 
   # 🔹 Buenas prácticas y estilo de código
-  flutter_lints: ^5.0.0
+  flutter_lints: ^3.0.1
 
 # Configuración específica para Flutter
 flutter:

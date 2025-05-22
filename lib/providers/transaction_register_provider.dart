@@ -4,8 +4,10 @@ import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/domain/transaction_register.dart';
 import 'package:SaveIt/domain/user.dart';
 import 'package:SaveIt/providers/account_list_provider.dart';
+import 'package:SaveIt/providers/coins_provider.dart';
 import 'package:SaveIt/providers/savings_provider.dart';
 import 'package:SaveIt/services/api.provider.dart';
+import 'package:SaveIt/utils/helpers/utils_functions.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -176,10 +178,14 @@ class TransactionRegisterProvider extends ChangeNotifier {
       );
 
       if (response.data != null && response.data!.containsKey('register')) {
-        if (objectiveId != null) {
-          context.read<SavingsProvider>().loadObjectivesAndLimits(accountId);
+        final message = response.data!['message'] as String?;
+        if (message != null && message.isNotEmpty) {
+          AppUtils.toast(context, title: message, type: 'info');
         }
+        context.read<SavingsProvider>().loadObjectivesAndLimits(accountId);
+        context.read<CoinsProvider>().reloadCategoriesAndSubcategoriesForAccount(accountId);
         context.read<AccountListProvider>().adjustAccountBalance(accountId, amount);
+        getTransactionsForAccount(accountId);
       }
     } on DioException catch (e) {
       debugPrint('DioError creating register: $e');
@@ -225,50 +231,6 @@ class TransactionRegisterProvider extends ChangeNotifier {
     }
   }
 
-
-  Future<void> updateRegister({
-    required BuildContext context,
-    required int accountId,
-    required double amount,
-    required String origin,
-    int? objectiveId,
-    double? objectiveAmount,
-    int? subcategoryId,
-    int? periodicId,
-  }) async {
-    // try {
-    //   isLoading = true;
-    //   notifyListeners();
-    //   final auth = Provider.of<AuthProvider>(context, listen: false);
-    //   final userId = auth.user!.id;
-
-    //   final response = await _api.updateRegister(
-    //     userId: userId,
-    //     accountId: accountId,
-    //     amount: amount,
-    //     origin: origin,
-    //     objectiveId: objectiveId,
-    //     objectiveAmount: objectiveAmount,
-    //     subcategory_id: subcategoryId,
-    //     periodicId: periodicId,
-    //   );
-
-    //   if (response.data is Map<String, dynamic> &&
-    //       response.data!.containsKey('register')) {
-    //     await getTransactionsForAccount(accountId);
-    //   }
-    // } on DioException catch (e) {
-    //   Clipboard.setData(ClipboardData(text: e.toString()));
-    //   debugPrint('DioError creating register: $e');
-    // } catch (e) {
-    //   Clipboard.setData(ClipboardData(text: e.toString()));
-    //   debugPrint('Error creating register: $e');
-    // } finally {
-    //   isLoading = false;
-    //   notifyListeners();
-    // }
-  }
-
   Future<void> updateCategoryForRegister({
     required int registerId,
     required int accountId,
@@ -295,17 +257,20 @@ class TransactionRegisterProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteRegister(BuildContext context, int registerId, int accountId) async {
+  Future<void> deleteRegister(BuildContext context, Transaction register, int accountId) async {
     try {
-      // Llamada DELETE al endpoint correspondiente
-      final response = await _api.deleteRegister(registerId);
+      final response = await _api.deleteRegister(register.id);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registro eliminado correctamente')),
         );
-        await getTransactionsForAccount(accountId);
-        // Actualiza la lista de cuentas y los saldos, y el contenedor de la cuenta seleccionada y el saldo
+          await getTransactionsForAccount(accountId);
+          context.read<SavingsProvider>().loadObjectivesAndLimits(accountId);
+          context.read<CoinsProvider>().reloadCategoriesAndSubcategoriesForAccount(accountId);
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          final userId = auth.user?.id;
+          context.read<AccountListProvider>().fetchAccounts(userId!);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al eliminar el registro')),

@@ -124,7 +124,7 @@ class _TransactionRegisterScreenState
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
             onPressed: () async {
-              await prov.deleteRegister(context, t.id, selectedAccount!.id);
+              await prov.deleteRegister(context, t, selectedAccount!.id);
               Navigator.pop(context);
             },
             child: const Text('Eliminar'),

@@ -96,6 +96,17 @@ class CoinsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  //crear una funcion que actualize todas las categorias y subcategorias de la cuenta seleccionada
+  void reloadCategoriesAndSubcategoriesForAccount(int accountId) async {
+    categories.clear();
+    subcategoriesMap.clear();
+    await getCategoriesForAccount(accountId);
+    for (var category in categories) {
+      await getSubcategoriesForCategory(category.id, accountId);
+    }
+    await fetchNoCategoryTotals(accountId);
+  }
+
   /// Obtiene categorías para la cuenta seleccionada
   Future<void> getCategoriesForAccount(int accountId) async {
     isLoadingCategories = true;

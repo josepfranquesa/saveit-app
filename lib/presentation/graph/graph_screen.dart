@@ -203,12 +203,9 @@ class _GraphScreenState extends State<GraphScreen> {
                                   if ((idx / xInterval).roundToDouble() != idx / xInterval) {
                                     return const SizedBox();
                                   }
-                                  return SideTitleWidget(
-                                    axisSide: meta.axisSide,
-                                    child: Text(
-                                      g.labels[idx],
-                                      style: const TextStyle(fontSize: 9),
-                                    ),
+                                  return Text(
+                                    g.labels[idx],
+                                    style: const TextStyle(fontSize: 9),
                                   );
                                 },
                               ),
@@ -219,12 +216,9 @@ class _GraphScreenState extends State<GraphScreen> {
                                 interval: yInterval,
                                 reservedSize: 30, // más compacto
                                 getTitlesWidget: (value, meta) {
-                                  return SideTitleWidget(
-                                    axisSide: meta.axisSide,
-                                    child: Text(
-                                      value.toInt().toString(),
-                                      style: const TextStyle(fontSize: 8),
-                                    ),
+                                  return Text(
+                                    value.toInt().toString(),
+                                    style: const TextStyle(fontSize: 8),
                                   );
                                 },
                               ),
