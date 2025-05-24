@@ -6,19 +6,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "frontendapp DEV",
+            "name": "new_app DEV",
             "type": "dart",
             "request": "launch",
             "program": "lib/main_dev.dart"
         },
         {
-            "name": "frontendapp PRE",
+            "name": "new_app PRE",
             "type": "dart",
             "request": "launch",
             "program": "lib/main_pre.dart"
         },
         {
-            "name": "frontendapp PROD",
+            "name": "new_app PROD",
             "type": "dart",
             "request": "launch",
             "program": "lib/main_prod.dart"
