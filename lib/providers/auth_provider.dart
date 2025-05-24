@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 import 'package:SaveIt/domain/login_response.dart';
 import 'package:SaveIt/domain/token.dart';
 import 'package:SaveIt/domain/user.dart';

@@ -21,21 +21,16 @@ dependencies:
 
   fl_chart: ^0.63.0
   
-  # 🔹 Manejo de peticiones HTTP (Conexión con el backend Laravel)
   http: ^1.4.0
   dio: ^5.4.0
   cherry_toast: ^1.1.0
 
-  # 🔹 Guardar datos localmente (Almacenar tokens JWT y preferencias de usuario)
   shared_preferences: ^2.2.2
 
-  # 🔹 Manejo de estados en la app (Opcional, pero recomendado)
   provider: ^6.0.5
 
-  # 🔹 Almacenamiento seguro para tokens (Opcional, mejora seguridad)
   flutter_secure_storage: ^9.2.4
 
-  # 🔹 Íconos estilo iOS
   cupertino_icons: ^1.0.6
 
 # Dependencias solo necesarias para desarrollo y pruebas
@@ -43,23 +38,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # 🔹 Buenas prácticas y estilo de código
   flutter_lints: ^3.0.1
 
-# Configuración específica para Flutter
 flutter:
   uses-material-design: true
 
-  # Puedes agregar assets (imágenes, fuentes, etc.) aquí
   assets:
-   #- assets/images/
    - assets/images/logo_login.png
-
-
-         # Puedes agregar fuentes personalizadas aquí
-  #fonts:
-   # - family: Roboto
-    #  fonts:
-        #- asset: assets/fonts/Roboto-Regular.ttf
-        #- asset: assets/fonts/Roboto-Bold.ttf
-       #   weight: 700
