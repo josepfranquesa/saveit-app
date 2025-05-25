@@ -1,12 +1,13 @@
-import 'package:SaveIt/domain/graphic.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:SaveIt/services/api.provider.dart';
-import 'package:SaveIt/providers/auth_provider.dart';
+
+import 'package:SaveIt/domain/graphic.dart';
 import 'package:SaveIt/domain/account.dart';
 import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/subcategory.dart';
+import 'package:SaveIt/services/api.provider.dart';
+import 'package:SaveIt/providers/auth_provider.dart';
 
 enum PeriodType { day, week, month, quarter, year, custom }
 
@@ -17,8 +18,12 @@ class GraphProvider extends ChangeNotifier {
 
   GraphProvider._internal(this._api) {
     Intl.defaultLocale = 'es_ES';
-    initializeDateFormatting('es_ES', null).then((_) => _localeInitialized = true);
+    initializeDateFormatting('es_ES', null).then((_) {
+      _localeInitialized = true;
+      notifyListeners();
+    });
   }
+
   factory GraphProvider({ required ApiProvider api, required AuthProvider auth }) {
     _instance ??= GraphProvider._internal(api);
     return _instance!;
@@ -31,20 +36,63 @@ class GraphProvider extends ChangeNotifier {
   final Set<SubCategory> _selectedSubs = {};
   Map<String, dynamic>? graphData;
 
+  List<Category> categories = [];
+  Map<int, List<SubCategory>> subcategoriesMap = {};
+  bool isLoadingCategories = false;
+  final Map<int, bool> _loadingSubcats = {};
+
+  List<Graphic>? _graphics;
+  List<Graphic>? get graphics => _graphics;
+
+  // Getters
   PeriodType get periodType => _periodType;
   String? get selectedOption => _selectedOption;
   DateTimeRange? get customRange => _customRange;
   Account? get selectedAccount => _selectedAccount;
   Set<SubCategory> get selectedSubs => _selectedSubs;
-
-  List<Category> categories = [];
-  Map<int, List<SubCategory>> subcategoriesMap = {};
-  bool isLoadingCategories = false;
-  final Map<int, bool> _loadingSubcats = {};
   bool isLoadingSubcat(int id) => _loadingSubcats[id] ?? false;
 
-  List<Graphic>? _graphics;
-  List<Graphic>? get graphics => _graphics;
+  // Subcategorías unificadas
+  List<SubCategory> get availableSubcategories {
+    return subcategoriesMap.values.expand((subs) => subs).toList();
+  }
+
+  // Setters
+  set periodType(PeriodType t) {
+    _periodType = t;
+    _selectedOption = options.isNotEmpty ? options.first : null;
+    _customRange = null;
+    notifyListeners();
+  }
+
+  set selectedOption(String? val) {
+    _selectedOption = val;
+    notifyListeners();
+  }
+
+  set customRange(DateTimeRange? r) {
+    _customRange = r;
+    notifyListeners();
+  }
+
+  set selectedAccount(Account? a) {
+    _selectedAccount = a;
+    _selectedSubs.clear();
+    categories.clear();
+    subcategoriesMap.clear();
+    getCategoriesForAccount(a!.id);
+    notifyListeners();
+    if (a != null) getGraphData(a.id);
+  }
+
+  void toggleSubCategory(SubCategory s) {
+    if (_selectedSubs.contains(s)) {
+      _selectedSubs.remove(s);
+    } else {
+      _selectedSubs.add(s);
+    }
+    notifyListeners();
+  }
 
   List<String> get options {
     if (!_localeInitialized) return [];
@@ -64,65 +112,88 @@ class GraphProvider extends ChangeNotifier {
     }
   }
 
-  set periodType(PeriodType t) {
-    _periodType = t;
-    _selectedOption = options.isNotEmpty ? options.first : null;
-    _customRange = null;
-    notifyListeners();
-  }
-  set selectedOption(String? val) { 
-    _selectedOption = val; notifyListeners(); 
-  }
-  set customRange(DateTimeRange? r) { 
-    _customRange = r; notifyListeners(); 
-  }
-  set selectedAccount(Account? a) {
-    _selectedAccount = a;
-    _selectedSubs.clear();
-    categories.clear();
-    subcategoriesMap.clear();
-    notifyListeners();
-    if (a != null) getGraphData(a.id);
-  }
-  void toggleSubCategory(SubCategory s) { if (_selectedSubs.contains(s)) {
-    _selectedSubs.remove(s);
-  } else {
-    _selectedSubs.add(s);
-  } notifyListeners(); }
-
+  // Generadores de opciones por tipo de periodo
   List<String> _generateDayOptions(int days) {
     final now = DateTime.now();
-    return List.generate(days, (i) { final d = now.subtract(Duration(days: i)); return DateFormat("EEEE d 'de' MMMM 'de' yyyy").format(d); });
+    return List.generate(days, (i) {
+      final d = now.subtract(Duration(days: i));
+      return DateFormat("EEEE d 'de' MMMM 'de' yyyy", 'es_ES').format(d);
+    });
   }
+
   List<String> _generateWeekOptions(int weeks) {
     final now = DateTime.now();
-    return List.generate(weeks, (i) { final start = now.subtract(Duration(days: now.weekday - 1 + 7 * i)); final end = start.add(const Duration(days: 6)); return '${DateFormat('dd/MM').format(start)} - ${DateFormat('dd/MM').format(end)}'; });
+    return List.generate(weeks, (i) {
+      final start = now.subtract(Duration(days: now.weekday - 1 + 7 * i));
+      final end = start.add(const Duration(days: 6));
+      return '${DateFormat('dd/MM').format(start)} - ${DateFormat('dd/MM').format(end)}';
+    });
   }
+
   List<String> _generateMonthOptions(int months) {
     final now = DateTime.now();
-    return List.generate(months, (i) { final d = DateTime(now.year, now.month - i); return DateFormat('MMMM yyyy').format(d); });
+    return List.generate(months, (i) {
+      final d = DateTime(now.year, now.month - i);
+      return DateFormat('MMMM yyyy', 'es_ES').format(d);
+    });
   }
+
   List<String> _generateQuarterOptions(int quarters) {
     final now = DateTime.now();
     final currentQ = ((now.month - 1) ~/ 3) + 1;
-    return List.generate(quarters, (i) { final q = ((currentQ - i - 1) % 4 + 4) % 4 + 1; final y = now.year - ((currentQ - i - 1) < 0 ? 1 : 0); return 'Q$q $y'; });
+    return List.generate(quarters, (i) {
+      final q = ((currentQ - i - 1) % 4 + 4) % 4 + 1;
+      final y = now.year - ((currentQ - i - 1) < 0 ? 1 : 0);
+      return 'Q$q $y';
+    });
   }
+
   List<String> _generateYearOptions(int years) {
     final now = DateTime.now();
     return List.generate(years, (i) => '${now.year - i}');
   }
 
-  Future<void> getCategoriesForAccount(int id) async { isLoadingCategories = true; notifyListeners(); try { categories = await _api.getCategoriesForAccount(id); } finally { isLoadingCategories = false; notifyListeners(); }}
-  Future<void> getSubcategoriesForCategory(int cid) async { final aid = _selectedAccount?.id; if (aid == null) return; _loadingSubcats[cid] = true; notifyListeners(); try { final subs = await _api.getSubcategoriesForCategory(cid, aid); subcategoriesMap[cid] = subs; } finally { _loadingSubcats[cid] = false; notifyListeners(); }}
+  // API
+  Future<void> getCategoriesForAccount(int id) async {
+    isLoadingCategories = true;
+    notifyListeners();
+    try {
+      categories = await _api.getCategoriesForAccount(id);
+      for (final cat in categories) {
+        if (!subcategoriesMap.containsKey(cat.id)) {
+          await getSubcategoriesForCategory(cat.id);
+        }
+      }
+    } finally {
+      isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getSubcategoriesForCategory(int cid) async {
+    final aid = _selectedAccount?.id;
+    if (aid == null) return;
+    _loadingSubcats[cid] = true;
+    notifyListeners();
+    try {
+      final subs = await _api.getSubcategoriesForCategory(cid, aid);
+      subcategoriesMap[cid] = subs;
+    } finally {
+      _loadingSubcats[cid] = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> createGraph() async {
     if (_selectedAccount == null) throw 'Cuenta no seleccionada';
+
     DateTime start;
     DateTime end;
     final now = DateTime.now();
+
     switch (_periodType) {
       case PeriodType.day:
-        start = DateFormat("EEEE d 'de' MMMM 'de' yyyy").parse(_selectedOption!);
+        start = DateFormat("EEEE d 'de' MMMM 'de' yyyy", 'es_ES').parse(_selectedOption!);
         end = start;
         break;
       case PeriodType.week:
@@ -132,7 +203,7 @@ class GraphProvider extends ChangeNotifier {
         end = fmt.parse('${parts[1]}/${now.year}');
         break;
       case PeriodType.month:
-        start = DateFormat('MMMM yyyy').parse(_selectedOption!);
+        start = DateFormat('MMMM yyyy', 'es_ES').parse(_selectedOption!);
         end = DateTime(start.year, start.month + 1, 0);
         break;
       case PeriodType.quarter:
@@ -152,8 +223,10 @@ class GraphProvider extends ChangeNotifier {
         end = _customRange!.end;
         break;
     }
+
     final accountId = _selectedAccount!.id;
     final categoryIds = _selectedSubs.map((s) => s.id).toList();
+
     graphData = await _api.createGraphData(
       period: _periodType.toString(),
       accountId: accountId,
@@ -161,18 +234,21 @@ class GraphProvider extends ChangeNotifier {
       endDate: end.toIso8601String(),
       categoryIds: categoryIds,
     );
+
     _graphics = await _api.getGraphics(accountId);
     notifyListeners();
   }
 
-   Future<void> getGraphData(int accountId) async {
+  Future<void> getGraphData(int accountId) async {
     _graphics = await _api.getGraphics(accountId);
     notifyListeners();
   }
 
   Future<void> deleteGraph(int id) async {
     await _api.deleteGraph(id);
-    _graphics = await _api.getGraphics(_selectedAccount!.id);
-    notifyListeners();
+    if (_selectedAccount != null) {
+      _graphics = await _api.getGraphics(_selectedAccount!.id);
+      notifyListeners();
+    }
   }
 }

@@ -1,4 +1,6 @@
+import 'package:SaveIt/domain/category.dart';
 import 'package:SaveIt/domain/graphic.dart';
+import 'package:SaveIt/domain/subcategory.dart';
 import 'package:SaveIt/utils/ui/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -377,8 +379,38 @@ class _GraphScreenState extends State<GraphScreen> {
                           if (gp.selectedAccount == null) return const SizedBox();
                           return TextButton.icon(
                             icon: const Icon(Icons.filter_list),
-                            label: const Text('Filtrar categorías', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                            label: Consumer<GraphProvider>(
+                              builder: (_, gp, __) {
+                                final count = gp.selectedSubs.length;
+                                final label = count == 0
+                                    ? 'Filtrar categorías'
+                                    : 'Filtrar categorías ($count)';
+                                return Text(
+                                  label,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                );
+                              },
+                            ),                            
                             onPressed: () => _showFilterDialog(context),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Consumer<GraphProvider>(
+                        builder: (_, gp, __) {
+                          if (gp.selectedSubs.isEmpty) return const SizedBox();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: gp.selectedSubs.map((s) {
+                                return Chip(
+                                  label: Text(s.name),
+                                  onDeleted: () => gp.toggleSubCategory(s),
+                                );
+                              }).toList(),
+                            ),
                           );
                         },
                       ),
@@ -425,34 +457,83 @@ class _GraphScreenState extends State<GraphScreen> {
   }
 
   void _showFilterDialog(BuildContext context) {
-    final gp = context.read<GraphProvider>();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Seleccionar categorías'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: ListView(
-            children: gp.categories.map((cat) {
-              final subs = gp.subcategoriesMap[cat.id] ?? [];
-              return ExpansionTile(
-                title: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                onExpansionChanged: (open) { if (open && subs.isEmpty) gp.getSubcategoriesForCategory(cat.id); },
-                children: subs.map((sub) {
-                  final selected = gp.selectedSubs.contains(sub);
-                  return CheckboxListTile(
-                    title: Text(sub.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    value: selected,
-                    onChanged: (_) => gp.toggleSubCategory(sub),
-                  );
-                }).toList(),
-              );
-            }).toList(),
-          ),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar', style: TextStyle(fontWeight: FontWeight.bold)))],
-      ),
+      builder: (ctx) {
+        return Consumer<GraphProvider>(
+          builder: (_, gp, __) {
+            final Map<Category, List<SubCategory>> grouped = {
+              for (var cat in gp.categories)
+                cat: gp.subcategoriesMap[cat.id] ?? []
+            };
+
+            return AlertDialog(
+              title: const Text('Selecciona subcategorías'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: ListView(
+                  children: grouped.entries.expand((entry) {
+                    final cat = entry.key;
+                    final subs = entry.value;
+
+                    if (subs.isEmpty) return <Widget>[];
+
+                    final allSelected = subs.every(gp.selectedSubs.contains);
+                    final anySelected = subs.any(gp.selectedSubs.contains);
+
+                    return [
+                      CheckboxListTile(
+                        value: allSelected ? true : anySelected ? null : false,
+                        tristate: true,
+                        title: Text(
+                          cat.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        onChanged: (_) {
+                          final shouldSelectAll = !allSelected;
+                          for (final sub in subs) {
+                            final alreadySelected = gp.selectedSubs.contains(sub);
+                            if (shouldSelectAll && !alreadySelected) {
+                              gp.toggleSubCategory(sub);
+                            } else if (!shouldSelectAll && alreadySelected) {
+                              gp.toggleSubCategory(sub);
+                            }
+                          }
+                        },
+                      ),
+                      ...subs.map((sub) {
+                        final isSelected = gp.selectedSubs.contains(sub);
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 12.0),
+                          child: CheckboxListTile(
+                            value: isSelected,
+                            title: Text(sub.name),
+                            onChanged: (_) => gp.toggleSubCategory(sub),
+                          ),
+                        );
+                      }),
+                    ];
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
