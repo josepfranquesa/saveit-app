@@ -81,7 +81,6 @@ class SaveItApp extends StatelessWidget {
         debugShowCheckedModeBanner: config?.debugShowCheckedModeBanner ?? false,
         theme: SaveItTheme.light,
 
-        // → Añadimos soporte de localizaciones de Material
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
@@ -89,8 +88,6 @@ class SaveItApp extends StatelessWidget {
         ],
         supportedLocales: const [
           Locale('es', 'ES'),
-          // si necesitas inglés u otros:
-          // Locale('en', 'US'),
         ],
 
         home: const LoginScreen(),

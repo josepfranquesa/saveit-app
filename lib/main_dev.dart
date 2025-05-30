@@ -1,17 +1,21 @@
-
+import 'dart:convert';
 import 'dart:io';
-
-import 'package:SaveIt/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+
 import 'app_config.dart';
+import 'main.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final jsonString = await rootBundle.loadString('lib/config/dev_config.json');
+  final configData = json.decode(jsonString);
+
   var configuredApp = AppConfig(
     appName: 'SaveIt',
     flavorName: 'development',
-    // apiBaseUrl: "http://192.168.1.100:8000/",
-    apiBaseUrl: Platform.isAndroid ? "http://10.0.2.2:8000/api" : "http://localhost:8000/api",
+    apiBaseUrl: configData["apiBaseUrl"],
     debugShowCheckedModeBanner: true,
     child: const SaveItApp(),
   );

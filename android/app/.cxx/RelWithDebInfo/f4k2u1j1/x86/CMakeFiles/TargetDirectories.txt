@@ -1,0 +1,2 @@
+/Users/josep/Desktop/new_app/android/app/.cxx/RelWithDebInfo/f4k2u1j1/x86/CMakeFiles/edit_cache.dir
+/Users/josep/Desktop/new_app/android/app/.cxx/RelWithDebInfo/f4k2u1j1/x86/CMakeFiles/rebuild_cache.dir

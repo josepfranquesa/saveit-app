@@ -8,7 +8,7 @@ void main() async {
   var configuredApp = const AppConfig(
     appName: 'SaveIt',
     flavorName: 'production',
-    apiBaseUrl: 'https://api.saveit.es',
+    apiBaseUrl: 'http://91.99.129.205/api',
     debugShowCheckedModeBanner: false,
     child: SaveItApp(),
   );
