@@ -1,5 +1,3 @@
-// lib/providers/savings_provider.dart
-
 import 'package:SaveIt/domain/subcategory.dart';
 import 'package:flutter/material.dart';
 import 'package:SaveIt/domain/account.dart';
@@ -8,12 +6,27 @@ import 'package:SaveIt/services/api.provider.dart';
 import 'package:SaveIt/providers/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
 
 class SavingsProvider extends ChangeNotifier {
   // Flags de carga
   bool _isLoading = false;
   bool get isLoading => _isLoading;
-  set isLoading(bool v) { _isLoading = v; notifyListeners(); }
+
+  set isLoading(bool v) {
+    _isLoading = v;
+
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks ||
+        SchedulerBinding.instance.schedulerPhase == SchedulerPhase.transientCallbacks) {
+      // Demora la notificación si estamos en medio del build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } else {
+      // Es seguro notificar
+      notifyListeners();
+    }
+  }
 
   bool _isLoadingObjectives = false;
   bool get isLoadingObjectives => _isLoadingObjectives;

@@ -283,7 +283,6 @@ class ApiProvider extends ChangeNotifier {
 
   Future<List<SubCategory>> fetchSubCategories(int accountId) async {
     final resp = await dio.get('/subcategory/account/$accountId');
-    debugPrint('RAW subcategories response: ${resp.data}');
     final List<dynamic> data = resp.data;
     return data
       .map((json) => SubCategory.fromJson(json as Map<String, dynamic>))

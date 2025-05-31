@@ -19,6 +19,7 @@ class SavingsScreen extends StatefulWidget {
 }
 
 class _SavingsScreenState extends State<SavingsScreen> {
+
   @override
   void initState() {
     super.initState();
@@ -30,10 +31,11 @@ class _SavingsScreenState extends State<SavingsScreen> {
 
       await accountProv.fetchAccounts(authProv.user!.id);
 
-      // 2) Inicializo SavingsProvider con la primera cuenta (si existe)
-      if (accountProv.accounts.isNotEmpty) {
-        savingsProv.selectAccount(accountProv.accounts.first);
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (accountProv.accounts.isNotEmpty) {
+          savingsProv.selectAccount(accountProv.accounts.first);
+        }
+      });
     });
   }
 

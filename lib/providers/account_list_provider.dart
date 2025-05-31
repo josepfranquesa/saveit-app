@@ -15,9 +15,8 @@ class AccountListProvider extends ChangeNotifier {
   /// Carga desde el backend las cuentas del usuario
   Future<void> fetchAccounts(int userId) async {
     _isLoading = true;
-    notifyListeners();
     try {
-      clear();
+      _accounts = [];
       final response = await _api.getAccountsByUserId(userId);
       final data = response.data;
       List<dynamic> accountsJson = [];
