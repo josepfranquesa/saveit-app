@@ -39,10 +39,12 @@ class ApiProvider extends ChangeNotifier {
 
   ApiProvider._();
 
-
   void setToken(String token) {
     _token = token;
+    dio.options.headers["Authorization"] = "Bearer $token";
   }
+
+
 
   /* **********************************************
    *               AUTENTICACIÓN

@@ -105,6 +105,7 @@ class AuthProvider extends ChangeNotifier {
 
   setToken(Token token) async {
     _api.setToken(token.token);
+    _api.dio.options.headers["Authorization"] = "Bearer ${token.token}";
     await _storage.write(key: _TOKEN_KEY, value: token.token);
     notifyListeners();
     return true;
